@@ -68,3 +68,59 @@ init() {
   generate_env
   copy_files
 }
+
+usage() {
+  cat <<EOF
+Usage: $0 [OPTIONS]
+
+Options:
+  -h, --help
+  --create-user
+  --generate-env
+  --copy-files
+
+With no options, all functions are executed.
+EOF
+}
+
+main() {
+  local -a functions=()
+  local function
+  local arg
+
+  for arg in "$@"; do
+    if [[ "$arg" == "--help" || "$arg" == "-h" ]]; then
+      usage
+      return 0
+    fi
+  done
+
+  for arg in "$@"; do
+    case "$arg" in
+      --create-user)
+        functions+=(create_user)
+        ;;
+      --generate-env)
+        functions+=(generate_env)
+        ;;
+      --copy-files)
+        functions+=(copy_files)
+        ;;
+      *)
+        printf 'Unknown option: %s\n\n' "$arg" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  if (( ${#functions[@]} == 0 )); then
+    init
+  fi
+
+  for function in "${functions[@]}"; do
+    "$function"
+  done
+}
+
+main "$@"
