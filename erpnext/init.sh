@@ -14,7 +14,7 @@ SERVICE_HOME="/srv/$SERVICE_USERNAME"
 
 export DB_PASSWORD="${DB_PASSWORD:-$(openssl rand -hex 32)}"
 export GUNICORN_WORKERS="${GUNICORN_WORKERS:-$(( $(nproc) * 2 + 1 ))}"
-export SITE="${SITE:?SITE environment variable cannot be empty}"
+export NGINX_PROXY_HOSTS="${NGINX_PROXY_HOSTS:?NGINX_PROXY_HOSTS environment variable cannot be empty}"
 
 ############################################################
 
@@ -48,7 +48,7 @@ fi
 
 if (( create_env_file )); then
   # shellcheck disable=SC2016
-  envsubst '$DB_PASSWORD $GUNICORN_WORKERS $SITE' < template.env > "$env_path"
+  envsubst '$DB_PASSWORD $GUNICORN_WORKERS $FRAPPE_SITE_NAME_HEADER $NGINX_PROXY_HOSTS' < template.env > "$env_path"
   chmod 600 "$env_path"
 fi
 
