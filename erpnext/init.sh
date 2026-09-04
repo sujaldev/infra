@@ -24,8 +24,6 @@ if id "$SERVICE_USERNAME" &>/dev/null; then
   exit 1
 else
   useradd \
-    --system \
-    --add-subids-for-system \
     --user-group \
     --shell /usr/sbin/nologin \
     --home-dir "$SERVICE_HOME" \
