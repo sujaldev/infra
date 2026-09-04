@@ -50,8 +50,30 @@ generate_env() {
   fi
 }
 
+generate_quadlets() {
+  # This provides Docker Compose like ${ENV_VAR} interpolation in Quadlet files.
+  # Files matching the glob `$SERVICE_HOME/systemd/*.envsubst.*` will be passed through the envsubst program with an
+  # environment containing only variables sourced from $SERVICE_HOME/.env.
+  # The resulting output files (and any non-matching files in the same directory) are placed in $SYSTEMD_CONFIG_DIR.
+
+  systemd_config_dir="$SERVICE_HOME/.config/containers/systemd"
+
+  for file in "$SERVICE_HOME"/systemd/*.envsubst.*; do
+    filename=${file##*/}
+    if [[ $file == *.envsubst.* ]]; then
+      env -i bash -c \
+        "set -a; source $SERVICE_HOME/.env; set +a; envsubst" \
+        < "$file" \
+        > "$systemd_config_dir/${filename/.template/}"
+    else
+      cp "$file" "$systemd_config_dir/$filename"
+    fi
+  done
+}
+
 copy_files() {
   cp -r ./frappe_docker "$SERVICE_HOME"
+  cp -r ./systemd "$SERVICE_HOME"
   cp apps.json "$SERVICE_HOME"
   correct_owner
 }
@@ -59,6 +81,7 @@ copy_files() {
 correct_owner() {
   chown -R "$SERVICE_USERNAME:$SERVICE_USERNAME" \
     "$SERVICE_HOME/frappe_docker" \
+    "$SERVICE_HOME/systemd" \
     "$SERVICE_HOME/apps.json" \
     "$SERVICE_HOME/.env"
 }
@@ -67,6 +90,7 @@ init() {
   create_user
   generate_env
   copy_files
+  generate_quadlets
 }
 
 usage() {
