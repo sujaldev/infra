@@ -1,9 +1,12 @@
 import secrets
+import shlex
 from io import StringIO
 from pathlib import Path
 
+from dotenv import dotenv_values
 from pyinfra import host
 from pyinfra import logger
+from pyinfra.api.facts import FactBase
 from pyinfra.facts.files import File
 from pyinfra.facts.hardware import Cpus
 from pyinfra.operations import files
@@ -20,6 +23,18 @@ DEFAULT_SERVICE_USER = "erpnext"
 DEFAULT_SERVICE_HOME = Path("/srv") / DEFAULT_SERVICE_USER
 
 SOURCE_DIR = Path(__file__).parent.resolve()
+
+
+# noinspection method-may-be-static,method-overriding
+class DotenvConfig(FactBase):
+    def requires_command(self, service_home: Path) -> str:
+        return "cat"
+
+    def command(self, service_home: Path):
+        return f"cat {shlex.quote(str(service_home / '.env'))}"
+
+    def process(self, output: str) -> dict:
+        return dict(dotenv_values(stream=StringIO('\n'.join(output))))
 
 
 def generate_env(service_user: str, service_home: Path, nginx_proxy_hosts: str, gunicorn_workers: int):
@@ -39,7 +54,7 @@ def generate_env(service_user: str, service_home: Path, nginx_proxy_hosts: str, 
 
 
 def generate_db_password_file(service_user: str, service_home: Path, db_password: str):
-    db_password_file = service_home / "db_password"
+    db_password_file = host.get_fact(DotenvConfig, service_home, _sudo=True)["DB_PASSWORD_SECRETS_FILE"]
 
     password_file_already_exists = bool(host.get_fact(File, str(db_password_file), _sudo=True))
     if not db_password and not password_file_already_exists:
