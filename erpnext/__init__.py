@@ -74,6 +74,43 @@ def generate_db_password_file(service_user: str, service_home: Path, db_password
     )
 
 
+def generate_quadlets(service_user: str, service_home: Path):
+    systemd_config_dir = service_home / ".config/containers/systemd"
+
+    files.directory(
+        path=str(systemd_config_dir),
+        user=service_user,
+        group=service_user,
+        _sudo=True,
+        _sudo_user=service_user,
+    )
+
+    dotenv = host.get_fact(DotenvConfig, service_home, _sudo=True)
+    for path in (SOURCE_DIR / "systemd").iterdir():
+        if not path.is_file():
+            continue
+
+        if path.suffix == ".jinja":
+            files.template(
+                src=str(path),
+                dest=str(systemd_config_dir / path.stem),
+                user=service_user,
+                group=service_user,
+                _sudo=True,
+                _sudo_user=service_user,
+                **dotenv
+            )
+        else:
+            files.put(
+                src=str(path),
+                dest=str(systemd_config_dir / path.name),
+                user=service_user,
+                group=service_user,
+                _sudo=True,
+                _sudo_user=service_user,
+            )
+
+
 @cli.command(
     gunicorn_workers="Set to 0 to automatically calculate with the formula (2 x number of CPU cores) + 1.",
     db_password="Leave empty to generate a random password. "
@@ -107,6 +144,8 @@ def setup(
     generate_env(service_user, service_home, nginx_proxy_hosts, gunicorn_workers)
 
     generate_db_password_file(service_user, service_home, db_password)
+
+    generate_quadlets(service_user, service_home)
 
 
 @cli.command()
