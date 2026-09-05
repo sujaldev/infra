@@ -1,0 +1,11 @@
+[Build]
+ImageTag={{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
+File=%h/frappe_docker/images/custom/Containerfile
+SetWorkingDirectory=%h/frappe_docker
+PodmanArgs=--no-cache
+BuildArg=FRAPPE_PATH=https://github.com/frappe/frappe
+BuildArg=FRAPPE_BRANCH=version-16
+Secret=id=apps_json,src=%h/apps.json
+
+[Service]
+ExecStartPost=/usr/bin/podman image prune --build-cache -f
