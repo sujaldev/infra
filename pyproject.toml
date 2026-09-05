@@ -13,7 +13,7 @@ dependencies = [
 infra = "cli:main"
 
 [tool.uv.build-backend]
-module-name = ["cli"]
+module-name = ["cli", "erpnext"]
 module-root = ""
 
 [build-system]
