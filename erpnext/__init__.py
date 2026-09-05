@@ -1,6 +1,10 @@
+import secrets
+from io import StringIO
 from pathlib import Path
 
 from pyinfra import host
+from pyinfra import logger
+from pyinfra.facts.files import File
 from pyinfra.facts.hardware import Cpus
 from pyinfra.operations import files
 from pyinfra.operations import server
@@ -34,13 +38,37 @@ def generate_env(service_user: str, service_home: Path, nginx_proxy_hosts: str, 
     )
 
 
+def generate_db_password_file(service_user: str, service_home: Path, db_password: str):
+    db_password_file = service_home / "db_password"
+
+    password_file_already_exists = bool(host.get_fact(File, str(db_password_file), _sudo=True))
+    if not db_password and not password_file_already_exists:
+        db_password = secrets.token_urlsafe(32)
+
+    if not db_password:
+        logger.info("DB password file already exists and no password was provided, will skip creation...")
+        return
+
+    files.put(
+        src=StringIO(db_password),
+        dest=str(db_password_file),
+        mode=400,
+        user=service_user,
+        group=service_user,
+        _sudo=True,
+    )
+
+
 @cli.command(
     gunicorn_workers="Set to 0 to automatically calculate with the formula (2 x number of CPU cores) + 1.",
+    db_password="Leave empty to generate a random password. "
+                "An existing password file will only be overridden if a non-empty value is explicitly provided.",
     service_user=f"Username of the host user that will run the rootless container.",
     service_home=f"Path to the home directory of the service user.",
 )
 def setup(
         nginx_proxy_hosts: str,
+        db_password: str,
         gunicorn_workers: int = 0,
         service_user: str = DEFAULT_SERVICE_USER,
         service_home: Path = DEFAULT_SERVICE_HOME
@@ -62,6 +90,8 @@ def setup(
         gunicorn_workers = host.get_fact(Cpus) * 2 + 1
 
     generate_env(service_user, service_home, nginx_proxy_hosts, gunicorn_workers)
+
+    generate_db_password_file(service_user, service_home, db_password)
 
 
 @cli.command()
