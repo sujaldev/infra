@@ -48,6 +48,12 @@ def create_service_user(service_user: str, service_home: Path):
         _sudo=True,
     )
 
+    server.shell(
+        name=f"Enable lingering for {service_user!r}",
+        commands=[f"loginctl enable-linger {shlex.quote(service_user)}"],
+        _sudo=True,
+    )
+
 
 def generate_env(service_user: str, service_home: Path, nginx_proxy_hosts: str, gunicorn_workers: int):
     # noinspection bad-argument-type
