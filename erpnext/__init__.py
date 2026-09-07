@@ -175,6 +175,20 @@ def sync_apps_json(service_user: str, service_home: Path):
     )
 
 
+def build_image(service_user: str):
+    uid = host.get_fact(Users)[service_user]["uid"]
+    systemd.service(
+        service="erpnext-custom-build.service",
+        running=True,
+        user_mode=True,
+        _sudo=True,
+        _sudo_user=service_user,
+        _env={
+            "XDG_RUNTIME_DIR": f"/run/user/{uid}"
+        }
+    )
+
+
 @cli.command(
     gunicorn_workers="Set to 0 to automatically calculate with the formula (2 x number of CPU cores) + 1.",
     db_password="Leave empty to generate a random password. "
@@ -208,6 +222,8 @@ def setup(
     sync_frappe_docker_repo(service_user, service_home)
 
     sync_apps_json(service_user, service_home)
+
+    build_image(service_user)
 
 
 @cli.command()
