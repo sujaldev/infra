@@ -9,8 +9,10 @@ from pyinfra import logger
 from pyinfra.api.facts import FactBase
 from pyinfra.facts.files import File
 from pyinfra.facts.hardware import Cpus
+from pyinfra.facts.server import Users
 from pyinfra.operations import files
 from pyinfra.operations import server
+from pyinfra.operations import systemd
 
 from cli.utils import ServiceCommandRegistry
 
@@ -129,6 +131,18 @@ def generate_quadlets(service_user: str, service_home: Path):
             )
 
 
+def systemd_daemon_reload(service_user: str):
+    uid = host.get_fact(Users)[service_user]["uid"]
+    systemd.daemon_reload(
+        user_mode=True,
+        _sudo=True,
+        _sudo_user=service_user,
+        _env={
+            "XDG_RUNTIME_DIR": f"/run/user/{uid}"
+        }
+    )
+
+
 def sync_frappe_docker_repo(service_user: str, service_home: Path):
     # TODO: rsync directly as service_user to final destination
     #       when https://github.com/pyinfra-dev/pyinfra/pull/1950 is released.
@@ -176,6 +190,8 @@ def setup(
     generate_db_password_file(service_user, service_home, db_password)
 
     generate_quadlets(service_user, service_home)
+
+    systemd_daemon_reload(service_user)
 
     sync_frappe_docker_repo(service_user, service_home)
 
