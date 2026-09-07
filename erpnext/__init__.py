@@ -163,6 +163,18 @@ def sync_frappe_docker_repo(service_user: str, service_home: Path):
     )
 
 
+def sync_apps_json(service_user: str, service_home: Path):
+    files.put(
+        src=str(SOURCE_DIR / "apps.json"),
+        dest=str(service_home / "apps.json"),
+        user=service_user,
+        group=service_user,
+        mode=600,
+        _sudo=True,
+        _sudo_user=service_user,
+    )
+
+
 @cli.command(
     gunicorn_workers="Set to 0 to automatically calculate with the formula (2 x number of CPU cores) + 1.",
     db_password="Leave empty to generate a random password. "
@@ -194,6 +206,8 @@ def setup(
     systemd_daemon_reload(service_user)
 
     sync_frappe_docker_repo(service_user, service_home)
+
+    sync_apps_json(service_user, service_home)
 
 
 @cli.command()
