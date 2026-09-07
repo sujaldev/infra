@@ -111,6 +111,26 @@ def generate_quadlets(service_user: str, service_home: Path):
             )
 
 
+def sync_frappe_docker_repo(service_user: str, service_home: Path):
+    # TODO: rsync directly as service_user to final destination
+    #       when https://github.com/pyinfra-dev/pyinfra/pull/1950 is released.
+    files.rsync(
+        src=str(SOURCE_DIR / "frappe_docker"),
+        dest="/tmp",
+        flags=["-rlpt", "--delete", "--exclude=.git"],
+        # _sudo=True,
+        # _sudo_user=service_user,
+    )
+
+    files.copy(
+        src="/tmp/frappe_docker",
+        dest=str(service_home),
+        overwrite=True,
+        _sudo=True,
+        _sudo_user=service_user,
+    )
+
+
 @cli.command(
     gunicorn_workers="Set to 0 to automatically calculate with the formula (2 x number of CPU cores) + 1.",
     db_password="Leave empty to generate a random password. "
@@ -146,6 +166,8 @@ def setup(
     generate_db_password_file(service_user, service_home, db_password)
 
     generate_quadlets(service_user, service_home)
+
+    sync_frappe_docker_repo(service_user, service_home)
 
 
 @cli.command()
