@@ -37,6 +37,18 @@ class DotenvConfig(FactBase):
         return dict(dotenv_values(stream=StringIO('\n'.join(output))))
 
 
+def create_service_user(service_user: str, service_home: Path):
+    server.user(
+        name=f"Ensure service user {service_user!r} exists",
+        user=service_user,
+        home=str(service_home),
+        shell="/usr/sbin/nologin",
+        create_home=True,
+        ensure_home=True,
+        _sudo=True,
+    )
+
+
 def generate_env(service_user: str, service_home: Path, nginx_proxy_hosts: str, gunicorn_workers: int):
     # noinspection bad-argument-type
     files.template(
@@ -148,15 +160,7 @@ def setup(
     """
     Performs initial setup required to deploy ERPNext on a fresh server.
     """
-    server.user(
-        name=f"Ensure service user {service_user!r} exists",
-        user=service_user,
-        home=str(service_home),
-        shell="/usr/sbin/nologin",
-        create_home=True,
-        ensure_home=True,
-        _sudo=True,
-    )
+    create_service_user(service_user, service_home)
 
     if gunicorn_workers == 0:
         gunicorn_workers = host.get_fact(Cpus) * 2 + 1
