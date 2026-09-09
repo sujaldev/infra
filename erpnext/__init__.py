@@ -12,6 +12,7 @@ from pyinfra.api.facts import FactBase
 from pyinfra.facts.hardware import Cpus
 from pyinfra.operations import files
 from pyinfra.operations import server
+from pyinfra.operations import systemd
 
 from cli.utils import ServiceCommandRegistry
 
@@ -37,6 +38,34 @@ class PodmanSecretExists(FactBase):
 
     def process(self, output: str) -> bool:
         return output[0].strip() == "true"
+
+
+def configure_journald():
+    # TODO: move this to a separate server initialization module.
+    journald_conf_dir = "/etc/systemd/journald.conf.d"
+
+    files.directory(
+        path="/etc/systemd/journald.conf.d",
+        mode=755,
+        _sudo=True,
+    )
+
+    files.put(
+        src=str(SOURCE_DIR / "journald.conf"),
+        dest=f"{journald_conf_dir}/journald.conf",
+        _sudo=True,
+    )
+
+    systemd.service(
+        service="systemd-journald.service",
+        restarted=True,
+        _sudo=True,
+    )
+
+    server.shell(
+        commands="journalctl --flush",
+        _sudo=True,
+    )
 
 
 def create_service_user(service_user: str, service_home: Path):
@@ -251,6 +280,8 @@ def setup(
     """
     Performs initial setup required to deploy ERPNext on a fresh server.
     """
+    configure_journald()
+
     create_service_user(service_user, service_home)
 
     if gunicorn_workers == 0:
