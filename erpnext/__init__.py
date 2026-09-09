@@ -10,10 +10,8 @@ from pyinfra import host
 from pyinfra import logger
 from pyinfra.api.facts import FactBase
 from pyinfra.facts.hardware import Cpus
-from pyinfra.facts.server import Users
 from pyinfra.operations import files
 from pyinfra.operations import server
-from pyinfra.operations import systemd
 
 from cli.utils import ServiceCommandRegistry
 
@@ -188,14 +186,10 @@ def generate_quadlets(service_user: str, service_home: Path, gunicorn_workers: i
 
 
 def systemd_daemon_reload(service_user: str):
-    uid = host.get_fact(Users)[service_user]["uid"]
-    systemd.daemon_reload(
-        user_mode=True,
+    server.shell(
+        commands="XDG_RUNTIME_DIR=/run/user/$UID systemctl --user daemon-reload",
         _sudo=True,
         _sudo_user=service_user,
-        _env={
-            "XDG_RUNTIME_DIR": f"/run/user/{uid}"
-        }
     )
 
 
@@ -233,16 +227,10 @@ def sync_apps_json(service_user: str, service_home: Path):
 
 
 def build_image(service_user: str):
-    uid = host.get_fact(Users)[service_user]["uid"]
-    systemd.service(
-        service="erpnext-custom-build.service",
-        running=True,
-        user_mode=True,
+    server.shell(
+        commands="XDG_RUNTIME_DIR=/run/user/$UID systemctl --user start erpnext-custom-build.service",
         _sudo=True,
         _sudo_user=service_user,
-        _env={
-            "XDG_RUNTIME_DIR": f"/run/user/{uid}"
-        }
     )
 
 
