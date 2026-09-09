@@ -4,6 +4,8 @@ from io import StringIO
 from pathlib import Path
 
 from dotenv import dotenv_values
+from jinja2 import Environment
+from jinja2 import DictLoader
 from pyinfra import host
 from pyinfra import logger
 from pyinfra.api.facts import FactBase
@@ -24,18 +26,7 @@ DEFAULT_SERVICE_USER = "erpnext"
 DEFAULT_SERVICE_HOME = Path("/srv") / DEFAULT_SERVICE_USER
 
 SOURCE_DIR = Path(__file__).parent.resolve()
-
-
-# noinspection method-may-be-static,method-overriding
-class DotenvConfig(FactBase):
-    def requires_command(self, service_home: Path) -> str:
-        return "cat"
-
-    def command(self, service_home: Path):
-        return f"cat {shlex.quote(str(service_home / '.env'))}"
-
-    def process(self, output: str) -> dict:
-        return dict(dotenv_values(stream=StringIO('\n'.join(output))))
+TEMPLATE_DOTENV_PATH = SOURCE_DIR / "template.env.jinja"
 
 
 # noinspection method-may-be-static,method-overriding
@@ -68,17 +59,28 @@ def create_service_user(service_user: str, service_home: Path):
     )
 
 
+def render_dotenv_template(nginx_proxy_hosts: str, gunicorn_workers: int) -> str:
+    with open(TEMPLATE_DOTENV_PATH) as file:
+        env = Environment(loader=DictLoader({
+            "template": file.read()
+        }))
+        return env.get_template("template").render(
+            gunicorn_workers=gunicorn_workers,
+            nginx_proxy_hosts=nginx_proxy_hosts,
+        )
+
+
 def generate_env(service_user: str, service_home: Path, nginx_proxy_hosts: str, gunicorn_workers: int):
     # noinspection bad-argument-type
     files.template(
-        src=str(SOURCE_DIR / "template.env.jinja"),
+        src=str(TEMPLATE_DOTENV_PATH),
         dest=str(service_home / ".env"),
         mode=600,
         user=service_user,
         group=service_user,
         _sudo=True,
         _sudo_user=service_user,
-        service_home=service_home,
+
         gunicorn_workers=gunicorn_workers,
         nginx_proxy_hosts=nginx_proxy_hosts,
     )
@@ -144,7 +146,7 @@ def generate_db_password_secret(
     )
 
 
-def generate_quadlets(service_user: str, service_home: Path):
+def generate_quadlets(service_user: str, service_home: Path, gunicorn_workers: int, nginx_proxy_hosts: str):
     systemd_config_dir = service_home / ".config/containers/systemd"
 
     files.directory(
@@ -155,7 +157,11 @@ def generate_quadlets(service_user: str, service_home: Path):
         _sudo_user=service_user,
     )
 
-    dotenv = host.get_fact(DotenvConfig, service_home, _sudo=True)
+    dotenv = dotenv_values(stream=StringIO(render_dotenv_template(
+        gunicorn_workers=gunicorn_workers,
+        nginx_proxy_hosts=nginx_proxy_hosts,
+    )))
+
     for path in (SOURCE_DIR / "systemd").iterdir():
         if not path.is_file():
             continue
@@ -265,7 +271,7 @@ def setup(
 
     generate_db_password_secret(service_user, service_home, db_password)
 
-    generate_quadlets(service_user, service_home)
+    generate_quadlets(service_user, service_home, gunicorn_workers, nginx_proxy_hosts)
 
     systemd_daemon_reload(service_user)
 
