@@ -1,0 +1,16 @@
+[Unit]
+Description=ERPNext Queue Short
+
+Requires=erpnext-configurator.service
+After=erpnext-configurator.service
+
+[Container]
+Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
+Pull=never
+Network=erpnext.network
+Volume=sites:/home/frappe/frappe-bench/sites
+
+Exec=bench worker --queue 'short,default'
+
+[Service]
+Restart=always
