@@ -1,0 +1,22 @@
+[Unit]
+Description=ERPNext MariaDB
+
+[Container]
+Image=docker.io/library/mariadb:11.8
+Network=erpnext.network
+NetworkAlias=db
+Volume=db-data:/var/lib/mysql
+
+Environment=MARIADB_AUTO_UPGRADE=1
+Environment=MYSQL_ROOT_PASSWORD_FILE={{ DB_PASSWORD_SECRETS_FILE }}
+Secret=DB_PASSWORD,type=mount,target={{ DB_PASSWORD_SECRETS_FILE }}
+
+HealthCmd=["healthcheck.sh","--connect","--innodb_initialized"]
+HealthInterval=5s
+HealthRetries=5
+HealthStartPeriod=5s
+HealthTimeout=5s
+Notify=healthy
+
+[Service]
+Restart=always
