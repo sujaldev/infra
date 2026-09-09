@@ -210,10 +210,11 @@ def sync_frappe_docker_repo(service_user: str, service_home: Path):
         # _sudo_user=service_user,
     )
 
-    files.copy(
-        src="/tmp/frappe_docker",
-        dest=str(service_home),
-        overwrite=True,
+    # `files.copy` cannot be used here because it will raise an exception if the source directory does not exist during
+    # plan-time. On a fresh install, the directory does not exist yet because the preceding rsync operation executes
+    # after this check.
+    server.shell(
+        commands=f"cp -a /tmp/frappe_docker {shlex.quote(str(service_home))}",
         _sudo=True,
         _sudo_user=service_user,
     )
