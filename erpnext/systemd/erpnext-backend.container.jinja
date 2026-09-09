@@ -1,0 +1,19 @@
+[Unit]
+Description=ERPNext Backend
+
+Requires=erpnext-configurator.service
+After=erpnext-configurator.service
+
+[Container]
+Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
+Pull=never
+Network=erpnext.network
+NetworkAlias=backend
+Volume=sites:/home/frappe/frappe-bench/sites
+
+Environment=GUNICORN_THREADS={{ GUNICORN_THREADS }}
+Environment=GUNICORN_TIMEOUT={{ GUNICORN_TIMEOUT }}
+Environment=GUNICORN_WORKERS={{ GUNICORN_WORKERS }}
+
+[Service]
+Restart=always
