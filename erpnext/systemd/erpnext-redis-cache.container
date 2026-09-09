@@ -1,0 +1,10 @@
+[Unit]
+Description=ERPNext Redis Cache
+
+[Container]
+Image=docker.io/library/redis:8.6-alpine
+Network=erpnext.network
+NetworkAlias=redis-cache
+
+[Service]
+Restart=always

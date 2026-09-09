@@ -1,0 +1,11 @@
+[Unit]
+Description=ERPNext Redis Queue
+
+[Container]
+Image=docker.io/library/redis:8.6-alpine
+Network=erpnext.network
+NetworkAlias=redis-queue
+Volume=redis-queue-data:/data
+
+[Service]
+Restart=always
