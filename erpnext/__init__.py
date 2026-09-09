@@ -7,7 +7,6 @@ from dotenv import dotenv_values
 from pyinfra import host
 from pyinfra import logger
 from pyinfra.api.facts import FactBase
-from pyinfra.facts.files import File
 from pyinfra.facts.hardware import Cpus
 from pyinfra.facts.server import Users
 from pyinfra.operations import files
@@ -37,6 +36,18 @@ class DotenvConfig(FactBase):
 
     def process(self, output: str) -> dict:
         return dict(dotenv_values(stream=StringIO('\n'.join(output))))
+
+
+# noinspection method-may-be-static,method-overriding
+class PodmanSecretExists(FactBase):
+    def requires_command(self, secret_name: str) -> str:
+        return "podman"
+
+    def command(self, secret_name: str) -> str:
+        return f'podman secret exists {shlex.quote(secret_name)} && echo true || echo false'
+
+    def process(self, output: str) -> bool:
+        return output[0].strip() == "true"
 
 
 def create_service_user(service_user: str, service_home: Path):
@@ -73,23 +84,62 @@ def generate_env(service_user: str, service_home: Path, nginx_proxy_hosts: str, 
     )
 
 
-def generate_db_password_file(service_user: str, service_home: Path, db_password: str):
-    db_password_file = host.get_fact(DotenvConfig, service_home, _sudo=True)["DB_PASSWORD_SECRETS_FILE"]
+def generate_db_password_secret(
+        service_user: str, service_home: Path, db_password: str, secret_name: str = "DB_PASSWORD"
+):
+    secret_already_exists = host.get_fact(
+        PodmanSecretExists,
+        secret_name,
+        _sudo=True,
+        _sudo_user=service_user,
+        _chdir=str(service_home),
+    )
+    if secret_already_exists:
+        if db_password:
+            overwrite = input(
+                "An explicit non-empty DB_PASSWORD was provided, but a value already exists. "
+                "Overwrite the existing secret? [y/N]: "
+            ).lower() == "y"
 
-    password_file_already_exists = bool(host.get_fact(File, str(db_password_file), _sudo=True))
-    if not db_password and not password_file_already_exists:
-        db_password = secrets.token_urlsafe(32)
+            if not overwrite:
+                return
+        else:
+            logger.info(
+                "DB_PASSWORD secret already exists and no password was provided, "
+                "will skip creation..."
+            )
+            return
+    else:
+        if not db_password:
+            logger.info(
+                "DB_PASSWORD secret does not exist and no password was provided, "
+                "will auto-generate a secure password value..."
+            )
+            db_password = secrets.token_urlsafe(32)
 
-    if not db_password:
-        logger.info("DB password file already exists and no password was provided, will skip creation...")
-        return
+    # The reason to create the password using a file as the source instead of an env var is to prevent leaking the
+    # password through process inspection.
+    db_password_buffer = str(service_home / ".db_password_buffer")
 
     files.put(
         src=StringIO(db_password),
-        dest=str(db_password_file),
+        dest=db_password_buffer,
         mode=400,
         user=service_user,
         group=service_user,
+        _sudo=True,
+    )
+
+    server.shell(
+        commands=[f"podman secret create --replace {shlex.quote(secret_name)} {shlex.quote(db_password_buffer)}"],
+        _sudo=True,
+        _sudo_user=service_user,
+        _chdir=str(service_home),
+    )
+
+    files.file(
+        path=db_password_buffer,
+        present=False,
         _sudo=True,
     )
 
@@ -213,7 +263,7 @@ def setup(
 
     generate_env(service_user, service_home, nginx_proxy_hosts, gunicorn_workers)
 
-    generate_db_password_file(service_user, service_home, db_password)
+    generate_db_password_secret(service_user, service_home, db_password)
 
     generate_quadlets(service_user, service_home)
 
