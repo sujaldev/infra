@@ -1,0 +1,17 @@
+[Unit]
+Description=ERPNext Websocket
+
+Requires=erpnext-configurator.service
+After=erpnext-configurator.service
+
+[Container]
+Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
+Pull=never
+Network=erpnext.network
+NetworkAlias=websocket
+Volume=sites:/home/frappe/frappe-bench/sites
+
+Exec=node /home/frappe/frappe-bench/apps/frappe/socketio.js
+
+[Service]
+Restart=always
