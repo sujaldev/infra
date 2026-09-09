@@ -1,0 +1,27 @@
+[Unit]
+Description=ERPNext Frontend
+
+Requires=erpnext-backend.service erpnext-websocket.service
+After=erpnext-backend.service erpnext-websocket.service
+
+[Container]
+Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
+Pull=never
+Network=erpnext.network
+NetworkAlias=frontend
+PublishPort=8080:8080/tcp
+Volume=sites:/home/frappe/frappe-bench/sites
+
+Exec=nginx-entrypoint.sh
+
+Environment=BACKEND=backend:8000
+Environment=CLIENT_MAX_BODY_SIZE={{ CLIENT_MAX_BODY_SIZE | default('50m', True) }}
+Environment=FRAPPE_SITE_NAME_HEADER={{ FRAPPE_SITE_NAME_HEADER | default('$$host', True) }}
+Environment=PROXY_READ_TIMEOUT={{ PROXY_READ_TIMEOUT | default(120, True) }}
+Environment=SOCKETIO=websocket:9000
+Environment=UPSTREAM_REAL_IP_ADDRESS={{ UPSTREAM_REAL_IP_ADDRESS | default('127.0.0.1', True) }}
+Environment=UPSTREAM_REAL_IP_HEADER={{ UPSTREAM_REAL_IP_HEADER | default('X-Forwarded-For', True) }}
+Environment=UPSTREAM_REAL_IP_RECURSIVE={{ UPSTREAM_REAL_IP_RECURSIVE | default('off', True) }}
+
+[Service]
+Restart=always
