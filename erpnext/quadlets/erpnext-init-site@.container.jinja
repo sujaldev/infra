@@ -1,0 +1,26 @@
+[Unit]
+Description=ERPNext Site Initializer
+
+Requires=erpnext-backend.service
+After=erpnext-backend.service
+
+[Container]
+Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
+Pull=never
+Network=erpnext.network
+Volume=sites:/home/frappe/frappe-bench/sites
+
+Secret=DB_PASSWORD,type=mount,target={{ DB_PASSWORD_SECRETS_FILE }}
+
+Entrypoint=["bash", "-c"]
+Exec='bench new-site "%i" \
+        --mariadb-user-host-login-scope="10.%.%.%" \
+        --db-root-username root \
+        --db-root-password "$$(cat {{ DB_PASSWORD_SECRETS_FILE }})" \
+        --admin-password admin \
+        --install-app erpnext \
+        --install-app hrms \
+        --install-app india_compliance'
+
+[Service]
+Type=oneshot

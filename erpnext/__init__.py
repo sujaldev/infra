@@ -296,7 +296,17 @@ def start_erpnext(service_user: str):
     )
 
 
+def init_sites(service_user: str, sites: str):
+    for site in sites.split(","):
+        server.shell(
+            commands=f"XDG_RUNTIME_DIR=/run/user/$UID systemctl --user start erpnext-init-site@{site}.service",
+            _sudo=True,
+            _sudo_user=service_user,
+        )
+
+
 @cli.command(
+    sites="Comma-separated list of sites to initialize using `bench new-site`.",
     gunicorn_workers="Set to 0 to automatically calculate with the formula (2 x number of CPU cores) + 1.",
     db_password="Leave empty to generate a random password. "
                 "An existing password file will only be overridden if a non-empty value is explicitly provided.",
@@ -304,6 +314,7 @@ def start_erpnext(service_user: str):
     service_home=f"Path to the home directory of the service user.",
 )
 def setup(
+        sites: str,
         nginx_proxy_hosts: str,
         db_password: str,
         gunicorn_workers: int = 0,
@@ -337,6 +348,8 @@ def setup(
     build_image(service_user)
 
     start_erpnext(service_user)
+
+    init_sites(service_user, sites)
 
 
 @cli.command()
