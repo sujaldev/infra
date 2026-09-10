@@ -214,6 +214,31 @@ def generate_quadlets(service_user: str, service_home: Path, gunicorn_workers: i
             )
 
 
+def copy_systemd_files(service_user: str, service_home: Path):
+    systemd_config_dir = service_home / ".config/systemd/user"
+
+    files.directory(
+        path=str(systemd_config_dir),
+        user=service_user,
+        group=service_user,
+        _sudo=True,
+        _sudo_user=service_user,
+    )
+
+    for path in (SOURCE_DIR / "systemd").iterdir():
+        if not path.is_file():
+            continue
+
+        files.put(
+            src=str(path),
+            dest=str(systemd_config_dir / path.name),
+            user=service_user,
+            group=service_user,
+            _sudo=True,
+            _sudo_user=service_user,
+        )
+
+
 def systemd_daemon_reload(service_user: str):
     server.shell(
         commands="XDG_RUNTIME_DIR=/run/user/$UID systemctl --user daemon-reload",
@@ -292,6 +317,8 @@ def setup(
     generate_db_password_secret(service_user, service_home, db_password)
 
     generate_quadlets(service_user, service_home, gunicorn_workers, nginx_proxy_hosts)
+
+    copy_systemd_files(service_user, service_home)
 
     systemd_daemon_reload(service_user)
 

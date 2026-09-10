@@ -1,5 +1,6 @@
 [Unit]
 Description=ERPNext Configurator
+PartOf=erpnext.target
 
 Requires=erpnext-mariadb.service erpnext-redis-cache.service erpnext-redis-queue.service
 After=erpnext-mariadb.service erpnext-redis-cache.service erpnext-redis-queue.service

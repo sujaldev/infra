@@ -1,5 +1,6 @@
 [Unit]
 Description=ERPNext Redis Cache
+PartOf=erpnext.target
 
 [Container]
 Image=docker.io/library/redis:8.6-alpine

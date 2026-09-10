@@ -1,0 +1,14 @@
+[Unit]
+Description=ERPNext
+
+Wants=erpnext-frontend.service
+Wants=erpnext-backend.service
+Wants=erpnext-websocket.service
+Wants=erpnext-configurator.service
+Wants=erpnext-queue-short.service
+Wants=erpnext-queue-long.service
+Wants=erpnext-scheduler.service
+
+Wants=erpnext-mariadb.service
+Wants=erpnext-redis-cache.service
+Wants=erpnext-redis-queue.service
