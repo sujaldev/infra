@@ -288,6 +288,14 @@ def build_image(service_user: str):
     )
 
 
+def start_erpnext(service_user: str):
+    server.shell(
+        commands="XDG_RUNTIME_DIR=/run/user/$UID systemctl --user start erpnext.target",
+        _sudo=True,
+        _sudo_user=service_user,
+    )
+
+
 @cli.command(
     gunicorn_workers="Set to 0 to automatically calculate with the formula (2 x number of CPU cores) + 1.",
     db_password="Leave empty to generate a random password. "
@@ -327,6 +335,8 @@ def setup(
     sync_apps_json(service_user, service_home)
 
     build_image(service_user)
+
+    start_erpnext(service_user)
 
 
 @cli.command()
