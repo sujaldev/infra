@@ -174,10 +174,10 @@ def generate_db_password_secret(
 
 
 def generate_quadlets(service_user: str, service_home: Path, gunicorn_workers: int, nginx_proxy_hosts: str):
-    systemd_config_dir = service_home / ".config/containers/systemd"
+    quadlets_config_dir = service_home / ".config/containers/systemd"
 
     files.directory(
-        path=str(systemd_config_dir),
+        path=str(quadlets_config_dir),
         user=service_user,
         group=service_user,
         _sudo=True,
@@ -189,14 +189,14 @@ def generate_quadlets(service_user: str, service_home: Path, gunicorn_workers: i
         nginx_proxy_hosts=nginx_proxy_hosts,
     )))
 
-    for path in (SOURCE_DIR / "systemd").iterdir():
+    for path in (SOURCE_DIR / "quadlets").iterdir():
         if not path.is_file():
             continue
 
         if path.suffix == ".jinja":
             files.template(
                 src=str(path),
-                dest=str(systemd_config_dir / path.stem),
+                dest=str(quadlets_config_dir / path.stem),
                 user=service_user,
                 group=service_user,
                 _sudo=True,
@@ -206,7 +206,7 @@ def generate_quadlets(service_user: str, service_home: Path, gunicorn_workers: i
         else:
             files.put(
                 src=str(path),
-                dest=str(systemd_config_dir / path.name),
+                dest=str(quadlets_config_dir / path.name),
                 user=service_user,
                 group=service_user,
                 _sudo=True,
