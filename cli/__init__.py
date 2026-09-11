@@ -12,12 +12,14 @@ from pyinfra.api.operations import run_ops
 from rich.logging import RichHandler
 
 import erpnext
+import nginx
 
 if TYPE_CHECKING:
     from cli.utils import ServiceCommandRegistry
 
 subcommands = [
     erpnext.cli,
+    nginx.cli,
 ]
 
 
