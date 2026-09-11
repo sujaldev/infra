@@ -288,6 +288,14 @@ def build_image(service_user: str):
     )
 
 
+def enable_erpnext(service_user: str):
+    server.shell(
+        commands="XDG_RUNTIME_DIR=/run/user/$UID systemctl --user enable erpnext.target",
+        _sudo=True,
+        _sudo_user=service_user,
+    )
+
+
 def start_erpnext(service_user: str):
     server.shell(
         commands="XDG_RUNTIME_DIR=/run/user/$UID systemctl --user start erpnext.target",
@@ -346,6 +354,8 @@ def setup(
     sync_apps_json(service_user, service_home)
 
     build_image(service_user)
+
+    enable_erpnext(service_user)
 
     start_erpnext(service_user)
 
