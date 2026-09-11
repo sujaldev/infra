@@ -1,0 +1,16 @@
+[Unit]
+Description=Nginx
+
+[Container]
+ContainerName=nginx
+Image=docker.io/library/nginx:stable
+Pull=always
+Network=host
+Volume={{ service_home / "conf.d/" }}:/etc/nginx/conf.d:ro,z
+Volume={{ service_home / "certs/" }}:/etc/nginx/certs:ro,z
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
