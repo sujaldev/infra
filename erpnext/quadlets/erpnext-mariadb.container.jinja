@@ -12,6 +12,8 @@ Environment=MARIADB_AUTO_UPGRADE=1
 Environment=MYSQL_ROOT_PASSWORD_FILE={{ DB_PASSWORD_SECRETS_FILE }}
 Secret=DB_PASSWORD,type=mount,target={{ DB_PASSWORD_SECRETS_FILE }}
 
+Exec='--character-set-server=utf8mb4' '--collation-server=utf8mb4_unicode_ci' --skip-character-set-client-handshake
+
 HealthCmd=["healthcheck.sh","--connect","--innodb_initialized"]
 HealthInterval=5s
 HealthRetries=5
