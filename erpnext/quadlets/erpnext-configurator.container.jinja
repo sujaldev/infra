@@ -6,6 +6,7 @@ Requires=erpnext-mariadb.service erpnext-redis-cache.service erpnext-redis-queue
 After=erpnext-mariadb.service erpnext-redis-cache.service erpnext-redis-queue.service
 
 [Container]
+ContainerName=configurator
 Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
 Pull=never
 Network=erpnext.network

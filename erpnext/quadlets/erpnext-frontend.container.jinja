@@ -6,6 +6,7 @@ Requires=erpnext-backend.service erpnext-websocket.service
 After=erpnext-backend.service erpnext-websocket.service
 
 [Container]
+ContainerName=frontend
 Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
 Pull=never
 Network=erpnext.network

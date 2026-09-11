@@ -6,6 +6,7 @@ Requires=erpnext-configurator.service
 After=erpnext-configurator.service
 
 [Container]
+ContainerName=queue-long
 Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
 Pull=never
 Network=erpnext.network

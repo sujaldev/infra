@@ -3,6 +3,7 @@ Description=ERPNext Redis Cache
 PartOf=erpnext.target
 
 [Container]
+ContainerName=redis-cache
 Image=docker.io/library/redis:8.6-alpine
 Network=erpnext.network
 NetworkAlias=redis-cache
