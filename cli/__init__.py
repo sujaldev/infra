@@ -10,7 +10,10 @@ from pyinfra.api.operation import add_op
 from pyinfra.api.operations import run_ops
 from rich.logging import RichHandler
 
+from erpnext import ERPNext
+
 commands = [
+    ERPNext(),
 ]
 
 
