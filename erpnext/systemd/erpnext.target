@@ -12,3 +12,6 @@ Wants=erpnext-scheduler.service
 Wants=erpnext-mariadb.service
 Wants=erpnext-redis-cache.service
 Wants=erpnext-redis-queue.service
+
+[Install]
+WantedBy=default.target
