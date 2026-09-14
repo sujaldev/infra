@@ -12,10 +12,12 @@ from rich.logging import RichHandler
 
 from erpnext import ERPNext
 from nginx import Nginx
+from server_init import Server_Init
 
 commands = [
     ERPNext(),
     Nginx(),
+    Server_Init(),
 ]
 
 
