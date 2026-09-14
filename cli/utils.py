@@ -1,49 +1,93 @@
 import inspect
-import functools
+from pathlib import Path
 
-from typing import Callable
-from typing import TypedDict
+from typing import List
 
 EMPTY = inspect.Parameter.empty
 
 
-# PyCharm just wouldn't shut up without this.
-class CommandData(TypedDict):
-    func: Callable | None
-    help: str
-    params: dict
+def class_name(cls) -> str:
+    return cls.__name__.lower().replace("_", "-")
 
 
-class ServiceCommandRegistry:
-    def __init__(self, name: str, help_str: str):
-        self.name = name
-        self.help = help_str
-        self.commands = {}
+def class_help(cls) -> str:
+    return (cls.__doc__ or "").strip()
+
+
+class Command:
+    # Meant to be overridden by the child class to register its own subcommands.
+    subcommands: List[type[SubCommand]]
+
+    def modify_command_parser(self, command_parser):
+        # Meant to be overridden by the child class to add arguments to the command itself, if need be.
+        pass
 
     def add_to_subparsers(self, subparsers):
-        service_parser = subparsers.add_parser(
-            name=self.name,
-            help=self.help,
+        command_parser = subparsers.add_parser(
+            name=class_name(self.__class__),
+            help=class_help(self),
         )
 
-        service_subparsers = service_parser.add_subparsers(
+        self.modify_command_parser(command_parser)
+
+        subcommand_parsers = command_parser.add_subparsers(
             dest="command",
             required=True,
         )
 
-        for command_name, command_data in self.commands.items():
-            command_parser = service_subparsers.add_parser(
-                name=command_name,
-                help=command_data["help"],
+        for subcommand in self.subcommands:
+            subcommand_parser = subcommand_parsers.add_parser(
+                name=class_name(subcommand),
+                help=class_help(subcommand),
             )
-            command_parser.set_defaults(func=command_data["func"])
-            for param_name, param_data in command_data["params"].items():
-                command_parser.add_argument(
+
+            param_help = {}
+            for cls in reversed(subcommand.__mro__):
+                param_help.update(cls.__dict__.get("param_help", {}))
+
+            signature = {}
+            for cls in reversed(subcommand.__mro__):
+                if "__init__" not in cls.__dict__:
+                    continue
+
+                params = list(inspect.signature(cls.__init__).parameters.values())[1:]
+                for param in params:
+                    # Skip *args and **kwargs
+                    if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):
+                        continue
+
+                    param_type = EMPTY
+                    if param.annotation is not EMPTY:
+                        param_type = param.annotation
+                    elif param.default is not EMPTY:
+                        param_type = type(param.default)
+
+                    default_help = f" (default: {param.default})" if param.default is not EMPTY else ""
+
+                    signature[param.name] = {
+                        "type": param_type,
+                        "default": param.default,
+                        "help": param_help.get(param.name, "") + default_help,
+                    }
+
+            for param_name, param_data in signature.items():
+                subcommand_parser.add_argument(
                     f"--{param_name.replace('_', '-')}",
                     help=param_data["help"],
                     default=param_data["default"],
                     type=param_data["type"],
                 )
+
+            subcommand_parser.set_defaults(
+                func=self.subcommand_decorator(subcommand, signature),
+            )
+
+    def subcommand_decorator(self, subcommand, signature):
+        def wrapper(**kwargs):
+            kwargs = self.prompt_missing_required_args(signature, kwargs)
+            subcommand(**kwargs).run()
+
+        return wrapper
 
     @staticmethod
     def prompt_missing_required_args(params: dict, kwargs):
@@ -61,39 +105,25 @@ class ServiceCommandRegistry:
 
         return kwargs
 
-    def command(self, **param_data):
-        def decorator(func: Callable) -> Callable:
-            command_name = func.__name__
-            command_data: CommandData = {
-                "func": None,  # Updated after wrapper function is created
-                "help": (func.__doc__ or "").strip(),
-                "params": {}
-            }
 
-            params = inspect.signature(func).parameters.values()
-            for param in params:
-                param_type = EMPTY
-                if param.annotation is not EMPTY:
-                    param_type = param.annotation
-                elif param.default is not EMPTY:
-                    param_type = type(param.default)
+class SubCommand:
+    def run(self):
+        pass
 
-                default_help = f" (default: {param.default})" if param.default is not EMPTY else ""
 
-                command_data["params"][param.name] = {
-                    "type": param_type,
-                    "default": param.default,
-                    "help": str(param_data.get(param.name) or "") + default_help,
-                }
+def make_service_subcommand_base(default_service_user: str, default_service_home: Path):
+    class ServiceSubCommandBase(SubCommand):
+        param_help = {
+            "service_user": f"Username of the host user that will run the rootless container.",
+            "service_home": f"Path to the home directory of the service user.",
+        }
 
-            self.commands[command_name] = command_data
+        def __init__(
+                self,
+                service_user: str = default_service_user,
+                service_home: Path = default_service_home,
+        ):
+            self.service_user = service_user
+            self.service_home = service_home
 
-            @functools.wraps(func)
-            def wrapper(**kwargs):
-                kwargs = self.prompt_missing_required_args(command_data["params"], kwargs)
-                return func(**kwargs)
-
-            self.commands[command_name]["func"] = wrapper
-            return wrapper
-
-        return decorator
+    return ServiceSubCommandBase

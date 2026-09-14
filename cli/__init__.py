@@ -1,6 +1,5 @@
 import argparse
 import logging
-from typing import TYPE_CHECKING
 
 from pyinfra.api import Config
 from pyinfra.api import Inventory
@@ -11,17 +10,7 @@ from pyinfra.api.operation import add_op
 from pyinfra.api.operations import run_ops
 from rich.logging import RichHandler
 
-import erpnext
-import nginx
-import server_init
-
-if TYPE_CHECKING:
-    from cli.utils import ServiceCommandRegistry
-
-subcommands = [
-    erpnext.cli,
-    nginx.cli,
-    server_init.cli,
+commands = [
 ]
 
 
@@ -49,7 +38,7 @@ def cli():
 
     subparsers = parser.add_subparsers(required=True)
 
-    for command in subcommands:
+    for command in commands:
         command.add_to_subparsers(subparsers)
 
     args = parser.parse_args()
