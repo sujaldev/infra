@@ -18,35 +18,6 @@ DEFAULT_SERVICE_HOME = Path("/srv") / DEFAULT_SERVICE_USER
 SOURCE_DIR = Path(__file__).parent.resolve()
 
 
-def set_privileged_port_start(start: int):
-    # TODO: move this to a separate server initialization module.
-    assert 0 <= start <= 65535
-
-    server.sysctl(
-        key="net.ipv4.ip_unprivileged_port_start",
-        value=start,
-        persist=True,
-        persist_file="/etc/sysctl.d/99-unprivileged-port-start.conf",
-        _sudo=True,
-    )
-
-    server.shell(
-        commands="sysctl --system",
-        _sudo=True,
-    )
-
-
-def expose_http_and_https_ports():
-    # TODO: move this to a separate server initialization module.
-    server.shell(
-        commands=[
-            "firewall-cmd --add-service=http --add-service=https --permanent",
-            "firewall-cmd --reload",
-        ],
-        _sudo=True,
-    )
-
-
 def create_service_user(service_user: str, service_home: Path):
     server.user(
         name=f"Ensure service user {service_user!r} exists",
@@ -200,10 +171,6 @@ def setup(
     """
     Performs initial setup required to deploy Nginx on a fresh server.
     """
-    set_privileged_port_start(80)
-
-    expose_http_and_https_ports()
-
     create_service_user(service_user, service_home)
 
     generate_site_configs(service_user, service_home, erpnext_sites)

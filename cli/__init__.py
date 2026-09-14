@@ -13,6 +13,7 @@ from rich.logging import RichHandler
 
 import erpnext
 import nginx
+import server_init
 
 if TYPE_CHECKING:
     from cli.utils import ServiceCommandRegistry
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
 subcommands = [
     erpnext.cli,
     nginx.cli,
+    server_init.cli,
 ]
 
 
