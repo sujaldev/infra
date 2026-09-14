@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pyinfra.operations import files
 from pyinfra.operations import server
+from pyinfra.operations import systemd
 
 from cli.utils import ServiceCommandRegistry
 
@@ -102,10 +103,10 @@ def generate_quadlets(service_user: str, service_home: Path):
 
 
 def systemd_daemon_reload(service_user: str):
-    server.shell(
-        commands="XDG_RUNTIME_DIR=/run/user/$UID systemctl --user daemon-reload",
+    systemd.daemon_reload(
+        user_mode=True,
+        user_name=service_user,
         _sudo=True,
-        _sudo_user=service_user,
     )
 
 
@@ -176,10 +177,13 @@ def copy_certs(service_user: str, service_home: Path):
 
 
 def restart_nginx(service_user: str):
-    server.shell(
-        commands="XDG_RUNTIME_DIR=/run/user/$UID systemctl --user restart nginx.service",
+    systemd.service(
+        service="nginx.service",
+        running=True,
+        restarted=True,
+        user_mode=True,
+        user_name=service_user,
         _sudo=True,
-        _sudo_user=service_user,
     )
 
 
