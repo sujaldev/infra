@@ -11,9 +11,11 @@ from pyinfra.api.operations import run_ops
 from rich.logging import RichHandler
 
 from erpnext import ERPNext
+from nginx import Nginx
 
 commands = [
     ERPNext(),
+    Nginx(),
 ]
 
 
