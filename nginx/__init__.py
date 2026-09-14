@@ -28,23 +28,6 @@ class Setup(NginxSubCommand):
         super().__init__(*args, **kwargs)
         self.erpnext_sites = erpnext_sites
 
-    def create_service_user(self):
-        server.user(
-            name=f"Ensure service user {self.service_user!r} exists",
-            user=self.service_user,
-            home=str(self.service_home),
-            shell="/usr/sbin/nologin",
-            create_home=True,
-            ensure_home=True,
-            _sudo=True,
-        )
-
-        server.shell(
-            name=f"Enable lingering for {self.service_user!r}",
-            commands=[f"loginctl enable-linger {shlex.quote(self.service_user)}"],
-            _sudo=True,
-        )
-
     def generate_site_configs(self):
         erpnext_sites = [site.strip() for site in self.erpnext_sites.split(",") if site.strip()]
 
@@ -95,49 +78,6 @@ class Deploy(NginxSubCommand):
     Requires that the setup command has run successfully at least once.
     """
 
-    def generate_quadlets(self):
-        quadlets_config_dir = self.service_home / ".config/containers/systemd"
-
-        files.directory(
-            path=str(quadlets_config_dir),
-            user=self.service_user,
-            group=self.service_user,
-            _sudo=True,
-            _sudo_user=self.service_user,
-        )
-
-        for path in (SOURCE_DIR / "quadlets").iterdir():
-            if not path.is_file():
-                continue
-
-            if path.suffix == ".jinja":
-                # noinspection bad-argument-type
-                files.template(
-                    src=str(path),
-                    dest=str(quadlets_config_dir / path.stem),
-                    user=self.service_user,
-                    group=self.service_user,
-                    _sudo=True,
-                    _sudo_user=self.service_user,
-                    service_home=self.service_home,
-                )
-            else:
-                files.put(
-                    src=str(path),
-                    dest=str(quadlets_config_dir / path.name),
-                    user=self.service_user,
-                    group=self.service_user,
-                    _sudo=True,
-                    _sudo_user=self.service_user,
-                )
-
-    def systemd_daemon_reload(self):
-        systemd.daemon_reload(
-            user_mode=True,
-            user_name=self.service_user,
-            _sudo=True,
-        )
-
     def copy_certs(self):
         certs_dir = self.service_home / "certs"
 
@@ -163,21 +103,11 @@ class Deploy(NginxSubCommand):
                 _sudo=True,
             )
 
-    def restart_nginx(self):
-        systemd.service(
-            service="nginx.service",
-            running=True,
-            restarted=True,
-            user_mode=True,
-            user_name=self.service_user,
-            _sudo=True,
-        )
-
     def run(self):
         self.copy_certs()
-        self.generate_quadlets()
+        self.generate_quadlets(SOURCE_DIR, service_home=self.service_home)
         self.systemd_daemon_reload()
-        self.restart_nginx()
+        self.restart_service("nginx.service")
 
 
 class Nginx(Command):

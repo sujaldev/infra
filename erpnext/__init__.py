@@ -66,23 +66,6 @@ class Setup(ERPNextSubCommand):
         self.db_password = db_password
         self.gunicorn_workers = gunicorn_workers if gunicorn_workers != 0 else host.get_fact(Cpus) * 2 + 1
 
-    def create_service_user(self):
-        server.user(
-            name=f"Ensure service user {self.service_user!r} exists",
-            user=self.service_user,
-            home=str(self.service_home),
-            shell="/usr/sbin/nologin",
-            create_home=True,
-            ensure_home=True,
-            _sudo=True,
-        )
-
-        server.shell(
-            name=f"Enable lingering for {self.service_user!r}",
-            commands=[f"loginctl enable-linger {shlex.quote(self.service_user)}"],
-            _sudo=True,
-        )
-
     def render_dotenv_template(self) -> str:
         with open(TEMPLATE_DOTENV_PATH) as file:
             env = Environment(loader=DictLoader({
@@ -166,74 +149,6 @@ class Setup(ERPNextSubCommand):
             _sudo=True,
         )
 
-    def generate_quadlets(self):
-        quadlets_config_dir = self.service_home / ".config/containers/systemd"
-
-        files.directory(
-            path=str(quadlets_config_dir),
-            user=self.service_user,
-            group=self.service_user,
-            _sudo=True,
-            _sudo_user=self.service_user,
-        )
-
-        dotenv = dotenv_values(stream=StringIO(self.render_dotenv_template()))
-
-        for path in (SOURCE_DIR / "quadlets").iterdir():
-            if not path.is_file():
-                continue
-
-            if path.suffix == ".jinja":
-                files.template(
-                    src=str(path),
-                    dest=str(quadlets_config_dir / path.stem),
-                    user=self.service_user,
-                    group=self.service_user,
-                    _sudo=True,
-                    _sudo_user=self.service_user,
-                    **dotenv
-                )
-            else:
-                files.put(
-                    src=str(path),
-                    dest=str(quadlets_config_dir / path.name),
-                    user=self.service_user,
-                    group=self.service_user,
-                    _sudo=True,
-                    _sudo_user=self.service_user,
-                )
-
-    def copy_systemd_files(self):
-        systemd_config_dir = self.service_home / ".config/systemd/user"
-
-        files.directory(
-            path=str(systemd_config_dir),
-            user=self.service_user,
-            group=self.service_user,
-            _sudo=True,
-            _sudo_user=self.service_user,
-        )
-
-        for path in (SOURCE_DIR / "systemd").iterdir():
-            if not path.is_file():
-                continue
-
-            files.put(
-                src=str(path),
-                dest=str(systemd_config_dir / path.name),
-                user=self.service_user,
-                group=self.service_user,
-                _sudo=True,
-                _sudo_user=self.service_user,
-            )
-
-    def systemd_daemon_reload(self):
-        systemd.daemon_reload(
-            user_name=self.service_user,
-            user_mode=True,
-            _sudo=True,
-        )
-
     def sync_frappe_docker_repo(self):
         # TODO: rsync directly as service_user to final destination
         #       when https://github.com/pyinfra-dev/pyinfra/pull/1950 is released.
@@ -273,16 +188,6 @@ class Setup(ERPNextSubCommand):
             _sudo=True,
         )
 
-    def start_erpnext(self):
-        systemd.service(
-            service="erpnext.target",
-            running=True,
-            enabled=True,
-            user_mode=True,
-            user_name=self.service_user,
-            _sudo=True,
-        )
-
     def init_sites(self):
         for site in self.sites.split(","):
             systemd.service(
@@ -297,13 +202,16 @@ class Setup(ERPNextSubCommand):
         self.create_service_user()
         self.generate_env()
         self.generate_db_password_secret()
-        self.generate_quadlets()
+
+        dotenv = dotenv_values(stream=StringIO(self.render_dotenv_template()))
+        self.generate_quadlets(SOURCE_DIR, **dotenv)
+
         self.copy_systemd_files()
         self.systemd_daemon_reload()
         self.sync_frappe_docker_repo()
         self.sync_apps_json()
         self.build_image()
-        self.start_erpnext()
+        self.restart_service("erpnext.target")
         self.init_sites()
 
 
