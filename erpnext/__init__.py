@@ -44,7 +44,8 @@ class Setup(ERPNextSubCommand):
     """
 
     param_help = {
-        "sites": "Comma-separated list of sites to initialize using `bench new-site`.",
+        "sites": "Comma-separated list of sites to initialize using `bench new-site`. "
+                 "Also used as the value for NGINX_PROXY_HOSTS.",
         "gunicorn_workers": "Set to 0 to automatically calculate with the formula (2 x number of CPU cores) + 1.",
         "db_password": "Leave empty to generate a random password. "
                        "An existing password file will only be overridden if a non-empty value is explicitly provided.",
@@ -56,7 +57,6 @@ class Setup(ERPNextSubCommand):
     def __init__(
             self,
             sites: str,
-            nginx_proxy_hosts: str,
             db_password: str,
             gunicorn_workers: int = 0,
             podman_network_subnet: str = "10.80.0.0/24",  # The default podman allocation pool starts from 10.88.0.0/16
@@ -65,8 +65,7 @@ class Setup(ERPNextSubCommand):
     ):
         super().__init__(*args, **kwargs)
 
-        self.sites = sites
-        self.nginx_proxy_hosts = nginx_proxy_hosts
+        self.sites = [site.strip() for site in sites.split(",") if site.strip()]
         self.db_password = db_password
         self.gunicorn_workers = gunicorn_workers if gunicorn_workers != 0 else host.get_fact(Cpus) * 2 + 1
         self.podman_network_subnet = podman_network_subnet
@@ -78,7 +77,7 @@ class Setup(ERPNextSubCommand):
             }))
             return env.get_template("template").render(
                 gunicorn_workers=self.gunicorn_workers,
-                nginx_proxy_hosts=self.nginx_proxy_hosts,
+                sites=self.sites,
                 podman_network_subnet=self.podman_network_subnet,
             )
 
@@ -94,7 +93,7 @@ class Setup(ERPNextSubCommand):
             _sudo_user=self.service_user,
 
             gunicorn_workers=self.gunicorn_workers,
-            nginx_proxy_hosts=self.nginx_proxy_hosts,
+            sites=self.sites,
             podman_network_subnet=self.podman_network_subnet,
         )
 
@@ -196,7 +195,7 @@ class Setup(ERPNextSubCommand):
         )
 
     def init_sites(self):
-        for site in self.sites.split(","):
+        for site in self.sites:
             systemd.service(
                 service=f"erpnext-init-site@{site}.service",
                 running=True,
