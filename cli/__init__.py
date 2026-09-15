@@ -37,10 +37,11 @@ def cli():
     )
 
     parser.add_argument(
-        "servers",
+        "-s", "--servers",
         help="Comma separated list of servers (defined in ~/.ssh/config) to operate on. "
              "Use @local for current host.",
         type=lambda servers: [server for server in servers.split(",") if server],
+        required=True,
     )
 
     subparsers = parser.add_subparsers(required=True)
