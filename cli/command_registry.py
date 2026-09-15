@@ -39,34 +39,7 @@ class Command:
                 help=class_help(subcommand),
             )
 
-            param_help = {}
-            for cls in reversed(subcommand.__mro__):
-                param_help.update(cls.__dict__.get("param_help", {}))
-
-            signature = {}
-            for cls in reversed(subcommand.__mro__):
-                if "__init__" not in cls.__dict__:
-                    continue
-
-                params = list(inspect.signature(cls.__init__).parameters.values())[1:]
-                for param in params:
-                    # Skip *args and **kwargs
-                    if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):
-                        continue
-
-                    param_type = EMPTY
-                    if param.annotation is not EMPTY:
-                        param_type = param.annotation
-                    elif param.default is not EMPTY:
-                        param_type = type(param.default)
-
-                    default_help = f" (default: {param.default})" if param.default is not EMPTY else ""
-
-                    signature[param.name] = {
-                        "type": param_type,
-                        "default": param.default,
-                        "help": param_help.get(param.name, "") + default_help,
-                    }
+            signature = _generate_subcommand_signature(subcommand)
 
             for param_name, param_data in signature.items():
                 subcommand_parser.add_argument(
@@ -79,6 +52,45 @@ class Command:
             subcommand_parser.set_defaults(
                 func=_subcommand_decorator(subcommand, signature),
             )
+
+
+def _generate_subcommand_param_help(subcommand: type[SubCommand]) -> dict:
+    param_help = {}
+    for cls in reversed(subcommand.__mro__):
+        param_help.update(cls.__dict__.get("param_help", {}))
+
+    return param_help
+
+
+def _generate_subcommand_signature(subcommand: type[SubCommand]) -> dict:
+    param_help = _generate_subcommand_param_help(subcommand)
+
+    signature = {}
+    for cls in reversed(subcommand.__mro__):
+        if "__init__" not in cls.__dict__:
+            continue
+
+        params = list(inspect.signature(cls.__init__).parameters.values())[1:]
+        for param in params:
+            # Skip *args and **kwargs
+            if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):
+                continue
+
+            param_type = EMPTY
+            if param.annotation is not EMPTY:
+                param_type = param.annotation
+            elif param.default is not EMPTY:
+                param_type = type(param.default)
+
+            default_help = f" (default: {param.default})" if param.default is not EMPTY else ""
+
+            signature[param.name] = {
+                "type": param_type,
+                "default": param.default,
+                "help": param_help.get(param.name, "") + default_help,
+            }
+
+    return signature
 
 
 def _subcommand_decorator(subcommand, signature):
