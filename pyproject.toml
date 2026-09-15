@@ -9,6 +9,7 @@ dependencies = [
     "pyinfra>=3.10.0",
     "python-dotenv>=1.2.3",
     "rich>=15.0.0",
+    "shtab>=1.12.1",
 ]
 
 [project.scripts]

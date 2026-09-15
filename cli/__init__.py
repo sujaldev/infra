@@ -1,6 +1,7 @@
 import argparse
 import logging
 
+import shtab
 from pyinfra.api import Config
 from pyinfra.api import Inventory
 from pyinfra.api import State
@@ -35,13 +36,17 @@ def cli():
         prog="infra",
         description="CLI to deploy and manage various services.",
     )
+    shtab.add_argument_to(parser, ["-c", "--print-completion"])
 
+    # noinspection unresolved-references
     parser.add_argument(
         "-s", "--servers",
         help="Comma separated list of servers (defined in ~/.ssh/config) to operate on. "
              "Use @local for current host.",
         type=lambda servers: [server for server in servers.split(",") if server],
         required=True,
+    ).complete = shtab.cmd(
+        """awk '$1 == "Host" { for (i = 2; i <= NF; i++) if ($i !~ /^[*!]/) print $i}' ~/.ssh/config 2>/dev/null"""
     )
 
     subparsers = parser.add_subparsers(required=True)
