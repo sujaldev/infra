@@ -212,7 +212,7 @@ class Setup(ERPNextSubCommand):
         dotenv = dotenv_values(stream=StringIO(self.render_dotenv_template()))
         self.generate_quadlets(SOURCE_DIR, **dotenv)
 
-        self.copy_systemd_files()
+        self.copy_systemd_files(SOURCE_DIR)
         self.systemd_daemon_reload()
         self.sync_frappe_docker_repo()
         self.sync_apps_json()
