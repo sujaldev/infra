@@ -1,6 +1,7 @@
 import inspect
 from typing import Dict
 from typing import List
+from typing import Callable
 
 EMPTY = inspect.Parameter.empty
 
@@ -71,25 +72,33 @@ def _generate_subcommand_signature(subcommand: type[SubCommand]) -> dict:
         if "__init__" not in cls.__dict__:
             continue
 
-        params = list(inspect.signature(cls.__init__).parameters.values())[1:]
-        for param in params:
-            # Skip *args and **kwargs
-            if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):
-                continue
+        signature.update(_parse_func_params(cls.__init__, param_help))
 
-            param_type = EMPTY
-            if param.annotation is not EMPTY:
-                param_type = param.annotation
-            elif param.default is not EMPTY:
-                param_type = type(param.default)
+    return signature
 
-            default_help = f" (default: {param.default})" if param.default is not EMPTY else ""
 
-            signature[param.name] = {
-                "type": param_type,
-                "default": param.default,
-                "help": param_help.get(param.name, "") + default_help,
-            }
+def _parse_func_params(func: Callable, param_help: Dict[str, str]) -> Dict[str, Dict[str, str]]:
+    params = list(inspect.signature(func).parameters.values())[1:]
+
+    signature = {}
+    for param in params:
+        # Skip *args and **kwargs
+        if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):
+            continue
+
+        param_type = EMPTY
+        if param.annotation is not EMPTY:
+            param_type = param.annotation
+        elif param.default is not EMPTY:
+            param_type = type(param.default)
+
+        default_help = f" (default: {param.default})" if param.default is not EMPTY else ""
+
+        signature[param.name] = {
+            "type": param_type,
+            "default": param.default,
+            "help": param_help.get(param.name, "") + default_help,
+        }
 
     return signature
 
