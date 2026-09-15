@@ -1,9 +1,6 @@
-import shlex
 from pathlib import Path
 
 from pyinfra.operations import files
-from pyinfra.operations import server
-from pyinfra.operations import systemd
 
 from cli.command_registry import Command
 from cli.subcommand_helpers import make_service_subcommand
