@@ -137,29 +137,34 @@ def _prompt_missing_required_args(params: dict, kwargs):
 
 
 def _generate_step_options(subcommand: type[SubCommand], parser: ArgumentParser):
-    steps = [
-        getattr(method, "step_name")
-        for method in vars(subcommand).values()
-        if callable(method) and getattr(method, "is_step_function", False)
-    ]
+    steps = set()
+    for cls in reversed(subcommand.__mro__):
+        for method in vars(cls).values():
+            if not callable(method):
+                continue
+            if not getattr(method, "is_step_function", False):
+                continue
+            steps.add(getattr(method, "step_name"))
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         "-i", "--include-steps",
-        help="Skip execution of any steps not included here.",
+        help="Skip execution of all steps except the steps specified here.",
         action="extend",
         choices=steps,
         nargs="+",
         type=str,
+        metavar="STEP",
         dest="included_steps",
     )
     group.add_argument(
         "-x", "--exclude-steps",
-        help="Skip execution of any steps included here.",
+        help="Skip execution of the specified steps.",
         action="extend",
         choices=steps,
         nargs="+",
         type=str,
+        metavar="STEP",
         dest="excluded_steps",
     )
 
