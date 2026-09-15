@@ -27,7 +27,7 @@ class Setup(SubCommand):
             present=True,
             latest=True,
             update=True,
-
+            _sudo=True,
         )
 
     @staticmethod
