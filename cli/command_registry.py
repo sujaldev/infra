@@ -1,4 +1,5 @@
 import inspect
+from typing import Dict
 from typing import List
 
 EMPTY = inspect.Parameter.empty
@@ -118,5 +119,7 @@ def _prompt_missing_required_args(params: dict, kwargs):
 
 
 class SubCommand:
+    param_help: Dict[str, str]
+
     def run(self):
         pass
