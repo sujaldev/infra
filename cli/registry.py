@@ -1,8 +1,8 @@
 import functools
 import inspect
 from typing import Dict
-from typing import List
 from typing import Callable
+from typing import List
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
