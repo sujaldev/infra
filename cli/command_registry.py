@@ -77,31 +77,32 @@ class Command:
                 )
 
             subcommand_parser.set_defaults(
-                func=self.subcommand_decorator(subcommand, signature),
+                func=_subcommand_decorator(subcommand, signature),
             )
 
-    def subcommand_decorator(self, subcommand, signature):
-        def wrapper(**kwargs):
-            kwargs = self.prompt_missing_required_args(signature, kwargs)
-            subcommand(**kwargs).run()
 
-        return wrapper
+def _subcommand_decorator(subcommand, signature):
+    def wrapper(**kwargs):
+        kwargs = _prompt_missing_required_args(signature, kwargs)
+        subcommand(**kwargs).run()
 
-    @staticmethod
-    def prompt_missing_required_args(params: dict, kwargs):
-        for param_name, param_data in params.items():
-            is_required = param_data["default"] is EMPTY
-            is_missing = kwargs.get(param_name, EMPTY) is EMPTY
-            if not (is_required and is_missing):
-                continue
+    return wrapper
 
-            prompted_value = input(f"Enter value for required parameter {param_name!r}: ")
-            if param_data["type"] not in (EMPTY, None):
-                kwargs[param_name] = param_data["type"](prompted_value)
-            else:
-                kwargs[param_name] = prompted_value
 
-        return kwargs
+def _prompt_missing_required_args(params: dict, kwargs):
+    for param_name, param_data in params.items():
+        is_required = param_data["default"] is EMPTY
+        is_missing = kwargs.get(param_name, EMPTY) is EMPTY
+        if not (is_required and is_missing):
+            continue
+
+        prompted_value = input(f"Enter value for required parameter {param_name!r}: ")
+        if param_data["type"] not in (EMPTY, None):
+            kwargs[param_name] = param_data["type"](prompted_value)
+        else:
+            kwargs[param_name] = prompted_value
+
+    return kwargs
 
 
 class SubCommand:
