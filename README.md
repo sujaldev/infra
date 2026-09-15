@@ -58,9 +58,9 @@ cat bash-completion.sh >> .venv/bin/activate
    ```
    Commands can also accept options. Run `infra <module> <command> -h` for more help.
 
-   > [!TIP]
-   > Each command accepts two special options, `--include-steps` and `--exclude-steps`, which can be used to include or
-   > exclude individual steps within a command. Shell completion is available for step names, tab away!
+> [!TIP]
+> Each command accepts two special options, `--include-steps` and `--exclude-steps`, which can be used to include or
+> exclude individual steps within a command. Shell completion is available for step names, tab away!
 
 ## Modules
 
