@@ -49,6 +49,8 @@ class Command:
             signature = _generate_subcommand_signature(subcommand)
 
             for param_name, param_data in signature.items():
+                if param_name in ("included_steps", "excluded_steps"):
+                    continue
                 subcommand_parser.add_argument(
                     f"--{param_name.replace('_', '-')}",
                     help=param_data["help"],
