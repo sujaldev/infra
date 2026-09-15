@@ -5,6 +5,7 @@ from pyinfra.operations import files
 from pyinfra.operations import server
 from pyinfra.operations import systemd
 
+from cli.registry import step
 from cli.registry import SubCommand
 
 
@@ -19,6 +20,7 @@ class ServiceSubCommandBase(SubCommand):
         self.service_user = service_user
         self.service_home = service_home
 
+    @step
     def create_service_user(self):
         server.user(
             name=f"Ensure service user {self.service_user!r} exists",
@@ -36,6 +38,7 @@ class ServiceSubCommandBase(SubCommand):
             _sudo=True,
         )
 
+    @step
     def generate_quadlets(self, src_dir: Path, **template_kwargs):
         quadlets_config_dir = self.service_home / ".config/containers/systemd"
 
@@ -71,6 +74,7 @@ class ServiceSubCommandBase(SubCommand):
                     _sudo_user=self.service_user,
                 )
 
+    @step
     def copy_systemd_files(self, src_dir: Path):
         systemd_config_dir = self.service_home / ".config/systemd/user"
 
@@ -95,6 +99,7 @@ class ServiceSubCommandBase(SubCommand):
                 _sudo_user=self.service_user,
             )
 
+    @step
     def systemd_daemon_reload(self):
         systemd.daemon_reload(
             user_mode=True,
@@ -102,6 +107,7 @@ class ServiceSubCommandBase(SubCommand):
             _sudo=True,
         )
 
+    @step
     def restart_service(self, service: str):
         systemd.service(
             service=service,

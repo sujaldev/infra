@@ -3,6 +3,7 @@ from pathlib import Path
 from pyinfra.operations import files
 
 from cli.registry import Command
+from cli.registry import step
 from cli.subcommand_helpers import make_service_subcommand
 
 DEFAULT_SERVICE_USER = "nginx"
@@ -25,6 +26,7 @@ class Setup(NginxSubCommand):
         super().__init__(*args, **kwargs)
         self.erpnext_sites = erpnext_sites
 
+    @step
     def generate_site_configs(self):
         erpnext_sites = [site.strip() for site in self.erpnext_sites.split(",") if site.strip()]
 
@@ -75,6 +77,7 @@ class Deploy(NginxSubCommand):
     Requires that the setup command has run successfully at least once.
     """
 
+    @step
     def copy_certs(self):
         certs_dir = self.service_home / "certs"
 

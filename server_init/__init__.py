@@ -6,6 +6,7 @@ from pyinfra.operations import server
 from pyinfra.operations import systemd
 
 from cli.registry import Command
+from cli.registry import step
 from cli.registry import SubCommand
 
 SOURCE_DIR = Path(__file__).parent.resolve()
@@ -16,8 +17,8 @@ class Setup(SubCommand):
     Performs common setup required to deploy services on a fresh server.
     """
 
-    @staticmethod
-    def install_required_packages():
+    @step
+    def install_required_packages(self):
         dnf.packages(
             packages=[
                 "acl",
@@ -30,8 +31,8 @@ class Setup(SubCommand):
             _sudo=True,
         )
 
-    @staticmethod
-    def configure_journald():
+    @step
+    def configure_journald(self):
         journald_conf_dir = "/etc/systemd/journald.conf.d"
 
         files.directory(
@@ -57,8 +58,8 @@ class Setup(SubCommand):
             _sudo=True,
         )
 
-    @staticmethod
-    def set_unprivileged_port_start(start: int):
+    @step
+    def set_unprivileged_port_start(self, start: int):
         server.sysctl(
             key="net.ipv4.ip_unprivileged_port_start",
             value=start,
@@ -72,8 +73,8 @@ class Setup(SubCommand):
             _sudo=True,
         )
 
-    @staticmethod
-    def expose_http_and_https_ports():
+    @step
+    def expose_http_and_https_ports(self):
         server.shell(
             commands=[
                 "firewall-cmd --add-service=http --add-service=https --permanent",

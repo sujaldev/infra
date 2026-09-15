@@ -15,6 +15,7 @@ from pyinfra.operations import server
 from pyinfra.operations import systemd
 
 from cli.registry import Command
+from cli.registry import step
 from cli.subcommand_helpers import make_service_subcommand
 
 DEFAULT_SERVICE_USER = "erpnext"
@@ -81,6 +82,7 @@ class Setup(ERPNextSubCommand):
                 podman_network_subnet=self.podman_network_subnet,
             )
 
+    @step
     def generate_env(self):
         # noinspection bad-argument-type
         files.template(
@@ -97,6 +99,7 @@ class Setup(ERPNextSubCommand):
             podman_network_subnet=self.podman_network_subnet,
         )
 
+    @step
     def generate_db_password_secret(self, secret_name: str = "DB_PASSWORD"):
         secret_already_exists = host.get_fact(
             PodmanSecretExists,
@@ -155,6 +158,7 @@ class Setup(ERPNextSubCommand):
             _sudo=True,
         )
 
+    @step
     def sync_frappe_docker_repo(self):
         # TODO: rsync directly as service_user to final destination
         #       when https://github.com/pyinfra-dev/pyinfra/pull/1950 is released.
@@ -175,6 +179,7 @@ class Setup(ERPNextSubCommand):
             _sudo_user=self.service_user,
         )
 
+    @step
     def sync_apps_json(self):
         files.put(
             src=str(SOURCE_DIR / "apps.json"),
@@ -186,6 +191,7 @@ class Setup(ERPNextSubCommand):
             _sudo_user=self.service_user,
         )
 
+    @step
     def build_image(self):
         systemd.service(
             service="erpnext-custom-build.service",
@@ -194,6 +200,7 @@ class Setup(ERPNextSubCommand):
             _sudo=True,
         )
 
+    @step
     def init_sites(self):
         for site in self.sites:
             systemd.service(
