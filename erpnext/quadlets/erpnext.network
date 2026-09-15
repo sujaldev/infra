@@ -1,5 +1,0 @@
-[Unit]
-Description=ERPNext Network
-
-[Network]
-NetworkName=erpnext

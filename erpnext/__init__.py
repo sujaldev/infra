@@ -48,6 +48,9 @@ class Setup(ERPNextSubCommand):
         "gunicorn_workers": "Set to 0 to automatically calculate with the formula (2 x number of CPU cores) + 1.",
         "db_password": "Leave empty to generate a random password. "
                        "An existing password file will only be overridden if a non-empty value is explicitly provided.",
+        "podman_network_subnet": "Subnet to use for erpnext.network. "
+                                 "The same value is passed to UPSTREAM_REAL_IP_ADDRESS to configure the public nginx "
+                                 "instance as a trusted source."
     }
 
     def __init__(
@@ -56,6 +59,7 @@ class Setup(ERPNextSubCommand):
             nginx_proxy_hosts: str,
             db_password: str,
             gunicorn_workers: int = 0,
+            podman_network_subnet: str = "10.80.0.0/24",  # The default podman allocation pool starts from 10.88.0.0/16
             *args,
             **kwargs,
     ):
@@ -65,6 +69,7 @@ class Setup(ERPNextSubCommand):
         self.nginx_proxy_hosts = nginx_proxy_hosts
         self.db_password = db_password
         self.gunicorn_workers = gunicorn_workers if gunicorn_workers != 0 else host.get_fact(Cpus) * 2 + 1
+        self.podman_network_subnet = podman_network_subnet
 
     def render_dotenv_template(self) -> str:
         with open(TEMPLATE_DOTENV_PATH) as file:
@@ -74,6 +79,7 @@ class Setup(ERPNextSubCommand):
             return env.get_template("template").render(
                 gunicorn_workers=self.gunicorn_workers,
                 nginx_proxy_hosts=self.nginx_proxy_hosts,
+                podman_network_subnet=self.podman_network_subnet,
             )
 
     def generate_env(self):
@@ -89,6 +95,7 @@ class Setup(ERPNextSubCommand):
 
             gunicorn_workers=self.gunicorn_workers,
             nginx_proxy_hosts=self.nginx_proxy_hosts,
+            podman_network_subnet=self.podman_network_subnet,
         )
 
     def generate_db_password_secret(self, secret_name: str = "DB_PASSWORD"):
