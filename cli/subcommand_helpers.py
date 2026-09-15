@@ -14,7 +14,8 @@ class ServiceSubCommandBase(SubCommand):
         "service_home": f"Path to the home directory of the service user.",
     }
 
-    def __init__(self, service_user: str, service_home: Path):
+    def __init__(self, service_user: str, service_home: Path, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.service_user = service_user
         self.service_home = service_home
 
@@ -118,7 +119,9 @@ def make_service_subcommand(default_service_user: str, default_service_home: Pat
                 self,
                 service_user: str = default_service_user,
                 service_home: Path = default_service_home,
+                *args,
+                **kwargs,
         ):
-            super().__init__(service_user, service_home)
+            super().__init__(service_user, service_home, *args, **kwargs)
 
     return ServiceSubCommand

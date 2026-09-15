@@ -1,7 +1,12 @@
+import functools
 import inspect
 from typing import Dict
 from typing import List
 from typing import Callable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from argparse import ArgumentParser
 
 EMPTY = inspect.Parameter.empty
 
@@ -54,6 +59,8 @@ class Command:
             subcommand_parser.set_defaults(
                 func=_subcommand_decorator(subcommand, signature),
             )
+
+            _generate_step_options(subcommand, subcommand_parser)
 
 
 def _generate_subcommand_param_help(subcommand: type[SubCommand]) -> dict:
@@ -127,8 +134,63 @@ def _prompt_missing_required_args(params: dict, kwargs):
     return kwargs
 
 
+def _generate_step_options(subcommand: type[SubCommand], parser: ArgumentParser):
+    steps = [
+        getattr(method, "step_name")
+        for method in vars(subcommand).values()
+        if callable(method) and getattr(method, "is_step_function", False)
+    ]
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "-i", "--include-step",
+        help="Skip execution of any steps not included here.",
+        action="extend",
+        choices=steps,
+        nargs="+",
+        type=str,
+        dest="included_steps",
+    )
+    group.add_argument(
+        "-x", "--exclude-step",
+        help="Skip execution of any steps included here.",
+        action="extend",
+        choices=steps,
+        nargs="+",
+        type=str,
+        dest="excluded_steps",
+    )
+
+
 class SubCommand:
     param_help: Dict[str, str]
 
+    # noinspection bad-assignment
+    def __init__(
+            self,
+            # This is intentional as the annotation here is passed to argparse as-is.
+            included_steps: list = None,
+            excluded_steps: list = None,
+    ):
+        self.included_steps: List[str] | None = included_steps
+        self.excluded_steps: List[str] | None = excluded_steps
+
     def run(self):
         pass
+
+
+def step(func):
+    """Registers a SubCommand method as an individually executable step using the step subcommand."""
+    name = func.__name__.replace("_", "-")
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if self.included_steps and name not in self.included_steps:
+            return None
+        elif self.excluded_steps and name in self.excluded_steps:
+            return None
+        return func(self, *args, **kwargs)
+
+    wrapper.is_step_function = True
+    wrapper.step_name = name
+    return wrapper
