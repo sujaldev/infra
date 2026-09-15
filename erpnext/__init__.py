@@ -15,7 +15,7 @@ from pyinfra.operations import server
 from pyinfra.operations import systemd
 
 from cli.command_registry import Command
-from cli.command_registry import make_service_subcommand_base
+from cli.subcommand_helpers import make_service_subcommand
 
 DEFAULT_SERVICE_USER = "erpnext"
 DEFAULT_SERVICE_HOME = Path("/srv") / DEFAULT_SERVICE_USER
@@ -23,7 +23,7 @@ DEFAULT_SERVICE_HOME = Path("/srv") / DEFAULT_SERVICE_USER
 SOURCE_DIR = Path(__file__).parent.resolve()
 TEMPLATE_DOTENV_PATH = SOURCE_DIR / "template.env.jinja"
 
-ERPNextSubCommand = make_service_subcommand_base(DEFAULT_SERVICE_USER, DEFAULT_SERVICE_HOME)
+ERPNextSubCommand = make_service_subcommand(DEFAULT_SERVICE_USER, DEFAULT_SERVICE_HOME)
 
 
 # noinspection method-may-be-static,method-overriding

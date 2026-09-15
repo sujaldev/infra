@@ -6,14 +6,14 @@ from pyinfra.operations import server
 from pyinfra.operations import systemd
 
 from cli.command_registry import Command
-from cli.command_registry import make_service_subcommand_base
+from cli.subcommand_helpers import make_service_subcommand
 
 DEFAULT_SERVICE_USER = "nginx"
 DEFAULT_SERVICE_HOME = Path("/srv") / DEFAULT_SERVICE_USER
 
 SOURCE_DIR = Path(__file__).parent.resolve()
 
-NginxSubCommand = make_service_subcommand_base(DEFAULT_SERVICE_USER, DEFAULT_SERVICE_HOME)
+NginxSubCommand = make_service_subcommand(DEFAULT_SERVICE_USER, DEFAULT_SERVICE_HOME)
 
 
 class Setup(NginxSubCommand):
