@@ -143,7 +143,7 @@ def _generate_step_options(subcommand: type[SubCommand], parser: ArgumentParser)
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
-        "-i", "--include-step",
+        "-i", "--include-steps",
         help="Skip execution of any steps not included here.",
         action="extend",
         choices=steps,
@@ -152,7 +152,7 @@ def _generate_step_options(subcommand: type[SubCommand], parser: ArgumentParser)
         dest="included_steps",
     )
     group.add_argument(
-        "-x", "--exclude-step",
+        "-x", "--exclude-steps",
         help="Skip execution of any steps included here.",
         action="extend",
         choices=steps,
