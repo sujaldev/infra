@@ -1,5 +1,5 @@
 [project]
-name = "gitops"
+name = "infra"
 version = "0.1.0"
 description = "Scripts to manage deployment of various services such as ERPNext, Authelia, and Nginx."
 readme = "README.md"
