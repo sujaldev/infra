@@ -5,11 +5,11 @@ from typing import List
 EMPTY = inspect.Parameter.empty
 
 
-def class_name(cls) -> str:
+def _class_name(cls) -> str:
     return cls.__name__.lower().replace("_", "-")
 
 
-def class_help(cls) -> str:
+def _class_help(cls) -> str:
     return (cls.__doc__ or "").strip()
 
 
@@ -23,8 +23,8 @@ class Command:
 
     def add_to_subparsers(self, subparsers):
         command_parser = subparsers.add_parser(
-            name=class_name(self.__class__),
-            help=class_help(self),
+            name=_class_name(self.__class__),
+            help=_class_help(self),
         )
 
         self.modify_command_parser(command_parser)
@@ -36,8 +36,8 @@ class Command:
 
         for subcommand in self.subcommands:
             subcommand_parser = subcommand_parsers.add_parser(
-                name=class_name(subcommand),
-                help=class_help(subcommand),
+                name=_class_name(subcommand),
+                help=_class_help(subcommand),
             )
 
             signature = _generate_subcommand_signature(subcommand)

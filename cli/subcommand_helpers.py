@@ -5,7 +5,7 @@ from pyinfra.operations import files
 from pyinfra.operations import server
 from pyinfra.operations import systemd
 
-from cli.command_registry import SubCommand
+from cli.registry import SubCommand
 
 
 class ServiceSubCommandBase(SubCommand):

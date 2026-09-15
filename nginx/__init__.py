@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pyinfra.operations import files
 
-from cli.command_registry import Command
+from cli.registry import Command
 from cli.subcommand_helpers import make_service_subcommand
 
 DEFAULT_SERVICE_USER = "nginx"

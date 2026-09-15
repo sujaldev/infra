@@ -14,7 +14,7 @@ from pyinfra.operations import files
 from pyinfra.operations import server
 from pyinfra.operations import systemd
 
-from cli.command_registry import Command
+from cli.registry import Command
 from cli.subcommand_helpers import make_service_subcommand
 
 DEFAULT_SERVICE_USER = "erpnext"

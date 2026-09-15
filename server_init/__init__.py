@@ -5,8 +5,8 @@ from pyinfra.operations import files
 from pyinfra.operations import server
 from pyinfra.operations import systemd
 
-from cli.command_registry import Command
-from cli.command_registry import SubCommand
+from cli.registry import Command
+from cli.registry import SubCommand
 
 SOURCE_DIR = Path(__file__).parent.resolve()
 
