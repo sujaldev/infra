@@ -11,7 +11,7 @@ Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
 Pull=never
 Network=erpnext.network
 NetworkAlias=frontend
-PublishPort=8080:8080/tcp
+PublishPort=127.0.0.1:8080:8080/tcp
 Volume=sites:/home/frappe/frappe-bench/sites
 
 Exec=nginx-entrypoint.sh
