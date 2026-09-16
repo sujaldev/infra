@@ -18,100 +18,66 @@ class Setup(NginxSubCommand):
     """
     Performs initial setup required to deploy Nginx on a fresh server.
     """
-    param_help = {
-        "erpnext_sites": "Comma-separated list of hosts to proxy to the ERPNext frontend container.",
-    }
-
-    def __init__(self, erpnext_sites: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.erpnext_sites = erpnext_sites
 
     @step
-    def generate_site_configs(self):
-        erpnext_sites = [site.strip() for site in self.erpnext_sites.split(",") if site.strip()]
-
-        conf_dir = self.service_home / "conf.d"
-        src_conf_dir = SOURCE_DIR / "conf.d"
-
+    def ensure_conf_dir(self):
+        # This is done to allow services to place their config files here `nginx deploy` has been run.
         files.directory(
-            path=str(conf_dir),
+            path=str(self.service_home / "conf.d"),
             user=self.service_user,
             group=self.service_user,
             _sudo=True,
             _sudo_user=self.service_user,
         )
 
-        for site in erpnext_sites:
-            # noinspection bad-argument-type
-            files.template(
-                src=str(src_conf_dir / "erpnext.conf.jinja"),
-                dest=str(conf_dir / f"erpnext-{site}.conf"),
-                user=self.service_user,
-                group=self.service_user,
-                _sudo=True,
-                _sudo_user=self.service_user,
-                server_name=site,
-            )
-
-        for path in src_conf_dir.iterdir():
-            if not path.is_file() or path.suffix != ".conf":
-                continue
-
-            files.put(
-                src=str(path),
-                dest=str(conf_dir / path.name),
-                user=self.service_user,
-                group=self.service_user,
-                _sudo=True,
-                _sudo_user=self.service_user,
-            )
-
     def run(self):
         self.create_service_user()
-        self.generate_site_configs()
+        self.ensure_conf_dir()
 
 
 class Deploy(NginxSubCommand):
     """
     Deploys Nginx according to the current configuration.
     Requires that the setup command has run successfully at least once.
+    Also requires `server-init setup` to have run successfully (to allow binding to ports 80 and 443).
     """
 
     @step
-    def copy_certs(self):
-        certs_dir = self.service_home / "certs"
-
-        files.directory(
-            path=str(certs_dir),
+    def sync_certs(self):
+        files.sync(
+            src=str(SOURCE_DIR / "certs"),
+            dest=str(self.service_home / "certs"),
             user=self.service_user,
             group=self.service_user,
-            mode=700,
+            mode="400",
+            dir_mode="700",
+            delete=True,
             _sudo=True,
             _sudo_user=self.service_user,
         )
 
-        for path in (SOURCE_DIR / "certs").iterdir():
-            if not path.is_file() or path.suffix != ".pem":
-                continue
-
-            files.put(
-                src=str(path),
-                dest=str(certs_dir / path.name),
-                user=self.service_user,
-                group=self.service_user,
-                mode=400,
-                _sudo=True,
-            )
+    @step
+    def sync_conf_dir(self):
+        files.sync(
+            src=str(SOURCE_DIR / "conf.d"),
+            dest=str(self.service_home / "conf.d"),
+            user=self.service_user,
+            group=self.service_user,
+            # Do not set delete=True here, as it will delete configs placed by other services.
+            _sudo=True,
+            _sudo_user=self.service_user,
+        )
 
     def run(self):
-        self.copy_certs()
+        self.sync_certs()
+        self.sync_conf_dir()
         self.generate_quadlets(SOURCE_DIR, service_home=self.service_home)
         self.systemd_daemon_reload()
         self.restart_service("nginx.service")
 
 
 class Nginx(Command):
-    """Deploys Nginx. Requires `server-init setup` to have run successfully (to allow binding to ports 80 and 443)."""
+    """Deploys Nginx."""
     subcommands = [
         Setup,
         Deploy,

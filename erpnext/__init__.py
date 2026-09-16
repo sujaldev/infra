@@ -9,6 +9,7 @@ from jinja2 import DictLoader
 from pyinfra import host
 from pyinfra import logger
 from pyinfra.api.facts import FactBase
+from pyinfra.facts.files import FindFiles
 from pyinfra.facts.hardware import Cpus
 from pyinfra.operations import files
 from pyinfra.operations import server
@@ -17,6 +18,8 @@ from pyinfra.operations import systemd
 from cli.registry import Command
 from cli.registry import step
 from cli.subcommand_helpers import make_service_subcommand
+from nginx import DEFAULT_SERVICE_USER as DEFAULT_NGINX_SERVICE_USER
+from nginx import DEFAULT_SERVICE_HOME as DEFAULT_NGINX_SERVICE_HOME
 
 DEFAULT_SERVICE_USER = "erpnext"
 DEFAULT_SERVICE_HOME = Path("/srv") / DEFAULT_SERVICE_USER
@@ -61,15 +64,23 @@ class Setup(ERPNextSubCommand):
             db_password: str,
             gunicorn_workers: int = 0,
             podman_network_subnet: str = "10.80.0.0/24",  # The default podman allocation pool starts from 10.88.0.0/16
+            nginx_service_user: str = DEFAULT_NGINX_SERVICE_USER,
+            nginx_service_home: Path = DEFAULT_NGINX_SERVICE_HOME,
             *args,
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
-        self.sites = [site.strip() for site in sites.split(",") if site.strip()]
+        self.sites = {site.strip() for site in sites.split(",") if site.strip()}
         self.db_password = db_password
         self.gunicorn_workers = gunicorn_workers if gunicorn_workers != 0 else host.get_fact(Cpus) * 2 + 1
         self.podman_network_subnet = podman_network_subnet
+        self.nginx_service_user = nginx_service_user
+        self.nginx_service_home = nginx_service_home
+
+    @property
+    def dotenv(self) -> dict:
+        return dotenv_values(stream=StringIO(self.render_dotenv_template()))
 
     def render_dotenv_template(self) -> str:
         with open(TEMPLATE_DOTENV_PATH) as file:
@@ -211,14 +222,46 @@ class Setup(ERPNextSubCommand):
                 _sudo=True,
             )
 
+    @step
+    def sync_nginx_confs(self, delete=True):
+        for site in self.sites:
+            # noinspection bad-argument-type
+            files.template(
+                src=str(SOURCE_DIR / "nginx.conf.jinja"),
+                dest=str(self.nginx_service_home / "conf.d" / f"erpnext-{site}.conf"),
+                mode=600,
+                user=self.nginx_service_user,
+                group=self.nginx_service_user,
+                _sudo=True,
+                _sudo_user=self.nginx_service_user,
+
+                server_name=site,
+                **self.dotenv,
+            )
+
+        # Delete configs for sites not present in the current value of the --sites option.
+        if not delete:
+            return
+
+        all_erpnext_confs = host.get_fact(
+            FindFiles,
+            str(self.nginx_service_home / "conf.d"),
+            fname="erpnext-*.conf",
+        )
+        desired_conf_names = [f"erpnext-{site}.conf" for site in self.sites]
+        for conf in all_erpnext_confs:
+            if Path(conf).name in desired_conf_names:
+                continue
+            files.file(
+                path=conf,
+                present=False,
+            )
+
     def run(self):
         self.create_service_user()
         self.generate_env()
         self.generate_db_password_secret()
-
-        dotenv = dotenv_values(stream=StringIO(self.render_dotenv_template()))
-        self.generate_quadlets(SOURCE_DIR, **dotenv)
-
+        self.generate_quadlets(SOURCE_DIR, **self.dotenv)
         self.copy_systemd_files(SOURCE_DIR)
         self.systemd_daemon_reload()
         self.sync_frappe_docker_repo()
@@ -226,6 +269,7 @@ class Setup(ERPNextSubCommand):
         self.build_image()
         self.restart_service("erpnext.target")
         self.init_sites()
+        self.sync_nginx_confs()
 
 
 class Deploy(ERPNextSubCommand):
