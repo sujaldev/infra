@@ -64,7 +64,8 @@ def main():
     excluded_params = (
         "servers",
         "command",
-        "func"
+        "func",
+        "print_completion",
     )
     kwargs = {
         param: arg
