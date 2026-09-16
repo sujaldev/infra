@@ -76,6 +76,13 @@ Deploys the [frappe_docker](https://github.com/frappe/frappe_docker) repository 
 * [frappe/hrms](https://github.com/frappe/hrms)
 * [resilient-tech/india-compliance](https://github.com/resilient-tech/india-compliance)
 
+If you'd like to use a different set of apps, you have to edit `erpnext/apps.json` (to update the image) and
+`erpnext/quadlets/erpnext-init-site@.container.jinja` (to have them automatically installed in your sites during
+initialization).
+
+My use case is limited to having multiple sites with the same set of apps, so it is currently not possible to install a
+different set of apps for each site.
+
 ### Nginx
 
 Deploys nginx with `--network=host`.
