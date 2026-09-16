@@ -16,9 +16,9 @@ from nginx import Nginx
 from server_init import Server_Init
 
 commands = [
-    ERPNext(),
-    Nginx(),
     Server_Init(),
+    Nginx(),
+    ERPNext(),
 ]
 
 

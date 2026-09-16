@@ -111,7 +111,7 @@ class Deploy(NginxSubCommand):
 
 
 class Nginx(Command):
-    """Manage Nginx deployment."""
+    """Deploys Nginx. Requires `server-init setup` to have run successfully (to allow binding to ports 80 and 443)."""
     subcommands = [
         Setup,
         Deploy,

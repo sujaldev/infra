@@ -237,7 +237,7 @@ class Deploy(ERPNextSubCommand):
 
 class ERPNext(Command):
     """
-    Manage ERPNext deployment.
+    Deploys ERPNext. Requires `nginx setup` to have run successfully.
     """
     subcommands = [
         Setup,
