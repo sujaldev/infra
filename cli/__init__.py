@@ -43,7 +43,7 @@ def cli():
         "-s", "--servers",
         help="Comma separated list of servers (defined in ~/.ssh/config) to operate on. "
              "Use @local for current host.",
-        type=lambda servers: [server for server in servers.split(",") if server],
+        type=lambda servers: [server.strip() for server in servers.split(",") if server.strip()],
         required=True,
     ).complete = shtab.cmd(
         """awk '$1 == "Host" { for (i = 2; i <= NF; i++) if ($i !~ /^[*!]/) print $i}' ~/.ssh/config 2>/dev/null"""
