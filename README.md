@@ -87,3 +87,15 @@ different set of apps for each site.
 
 Deploys nginx with `--network=host`.
 
+#### TLS
+
+Wildcard certs for `*.<your-domain>` are meant to be placed manually in `nginx/certs/fullchain.pem` and
+`nginx/certs/privkey.pem`. A few reasons why I'm not automating this:
+
+1. My DNS provider does not allow scoping API credentials to a particular domain and record type. For example, for the
+   `DNS-01` challenge you only need the ability to set a `TXT` record on `_acme-challenge.<your-domain>`.
+2. To get around point 1, I intend to use a separate VPS with no exposed services (besides ssh) for certs renewal.
+3. I do not want to use the `HTTP-01` challenge because it requires issuing certificates for particular domains, which
+   exposes those domains in the CT logs. Using wildcard DNS records, a wildcard certificate, and Authelia makes it
+   considerably harder to enumerate what services are running on a host.
+
