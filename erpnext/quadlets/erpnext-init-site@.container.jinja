@@ -20,7 +20,8 @@ Exec='bench new-site "%i" \
         --admin-password admin \
         --install-app erpnext \
         --install-app hrms \
-        --install-app india_compliance'
+        --install-app india_compliance; \
+      bench --site "%i" scheduler enable'
 
 [Service]
 Type=oneshot
