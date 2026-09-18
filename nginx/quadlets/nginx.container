@@ -6,8 +6,8 @@ ContainerName=nginx
 Image=docker.io/library/nginx:stable
 Pull=always
 Network=host
-Volume={{ service_home / "conf.d/" }}:/etc/nginx/conf.d:ro,z
-Volume={{ service_home / "certs/" }}:/etc/nginx/certs:ro,z
+Volume=%h/conf.d/:/etc/nginx/conf.d:ro,z
+Volume=%h/certs/:/etc/nginx/certs:ro,z
 
 [Service]
 Restart=always

@@ -71,7 +71,7 @@ class Deploy(NginxSubCommand):
     def run(self):
         self.sync_certs()
         self.sync_conf_dir()
-        self.generate_quadlets(SOURCE_DIR, service_home=self.service_home)
+        self.generate_quadlets(SOURCE_DIR)
         self.systemd_daemon_reload()
         self.restart_service("nginx.service")
 
