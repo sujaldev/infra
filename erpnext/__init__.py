@@ -48,8 +48,7 @@ class Setup(ERPNextSubCommand):
     """
 
     param_help = {
-        "sites": "Comma-separated list of sites to initialize using `bench new-site`. "
-                 "Also used as the value for NGINX_PROXY_HOSTS.",
+        "sites": "Comma-separated list of sites to initialize using `bench new-site`. ",
         "gunicorn_workers": "Set to 0 to automatically calculate with the formula (2 x number of CPU cores) + 1.",
         "db_password": "Leave empty to generate a random password. "
                        "An existing password file will only be overridden if a non-empty value is explicitly provided.",
