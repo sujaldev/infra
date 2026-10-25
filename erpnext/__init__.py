@@ -235,6 +235,7 @@ class Setup(ERPNextSubCommand):
                 _sudo_user=self.nginx_service_user,
 
                 server_name=site,
+                service_user=self.service_user,
                 **self.dotenv,
             )
 
@@ -258,6 +259,7 @@ class Setup(ERPNextSubCommand):
 
     def run(self):
         self.create_service_user()
+        self.create_socket_group(self.nginx_service_user)
         self.generate_env()
         self.generate_db_password_secret()
         self.generate_quadlets(SOURCE_DIR, **self.dotenv)

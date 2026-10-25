@@ -8,6 +8,7 @@ Pull=always
 Network=host
 Volume=%h/conf.d/:/etc/nginx/conf.d:ro,z
 Volume=%h/certs/:/etc/nginx/certs:ro,z
+Volume=/srv/erpnext/erpnext-frontend.sock:/run/erpnext-frontend.sock
 
 [Service]
 Restart=always

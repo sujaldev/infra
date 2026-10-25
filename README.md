@@ -1,101 +1,18 @@
-# Infra
+# Why this approach didn't work out
 
-Pyinfra-based IaC tool with a comfy CLI to deploy various services using rootless Podman containers managed by systemd
-via Quadlets, with each service running as a separate user on the host.
+This branch was intended for modifying services to use unix sockets to communicate between one another (primarily
+from/to nginx). This would have improved performance by bypassing Podman's rootless networking (as confirmed by some
+benchmarks I ran), and as a bonus (?) allowed systemd socket activation.
 
-Only tested to work with AlmaLinux hosts (will likely work with other RHEL-family distributions too).
+But I have decided to abandon this approach due to the following reasons:
 
-## Setup
-
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/), and run:
-
-```bash
-git clone https://github.com/sujaldev/infra --recurse-submodules
-cd infra
-uv venv .venv
-source .venv/bin/activate
-uv sync
-```
-
-Enable bash completion by running this at the root of the repo:
-
-```bash
-source bash-completion.sh
-```
-
-To make your life easier, I suggest appending the `bash-completion.sh` script to `.venv/bin/activate`. This will
-automatically enable bash completion when you activate the venv:
-
-```
-cat bash-completion.sh >> .venv/bin/activate
-```
-
-> [!WARNING]
-> You'll have to repeat this step every time you (re)create your virtual environment.
-> It would be nice if uv provided a way to do this via a hook script, but it doesn't seem to do so at the moment.
-
-## Usage
-
-1. **Specify a target** to operate on. This can be a host defined in `~/.ssh/config`:
-    ```bash
-    # Single host
-    infra -s host
-    # Multiple hosts
-    infra -s host1,host2
-    # Local host
-    infra -s @local
-    ```
-
-2. **Specify a module** (run `infra -h` to list all modules):
-   ```bash
-   infra -s my-server erpnext
-   ```
-
-3. **Specify a command** to execute for the module (run `infra <module> -h` to list all commands for that module):
-   ```bash
-   # Executes the "setup" command for the "nginx" module on target "my-server".
-   infra -s my-server nginx setup
-   ```
-   Commands can also accept options. Run `infra <module> <command> -h` for more help.
-
-> [!TIP]
-> Each command accepts two special options, `--include-steps` and `--exclude-steps`, which can be used to include or
-> exclude individual steps within a command. Shell completion is available for step names, tab away!
-
-## Modules
-
-### server-init
-
-Performs common server-wide configuration.
-
-### ERPNext
-
-Deploys the [frappe_docker](https://github.com/frappe/frappe_docker) repository with the following apps:
-
-* [frappe/erpnext](https://github.com/frappe/erpnext)
-* [frappe/hrms](https://github.com/frappe/hrms)
-* [resilient-tech/india-compliance](https://github.com/resilient-tech/india-compliance)
-
-If you'd like to use a different set of apps, you have to edit `erpnext/apps.json` (to update the image) and
-`erpnext/quadlets/erpnext-init-site@.container.jinja` (to have them automatically installed in your sites during
-initialization).
-
-My use case is limited to having multiple sites with the same set of apps, so it is currently not possible to install a
-different set of apps for each site.
-
-### Nginx
-
-Deploys nginx with `--network=host`.
-
-#### TLS
-
-Wildcard certs for `*.<your-domain>` are meant to be placed manually in `nginx/certs/fullchain.pem` and
-`nginx/certs/privkey.pem`. A few reasons why I'm not automating this:
-
-1. My DNS provider does not allow scoping API credentials to a particular domain and record type. For example, for the
-   `DNS-01` challenge you only need the ability to set a `TXT` record on `_acme-challenge.<your-domain>`.
-2. To get around point 1, I intend to use a separate VPS with no exposed services (besides ssh) for certs renewal.
-3. I do not want to use the `HTTP-01` challenge because it requires issuing certificates for particular domains, which
-   exposes those domains in the CT logs. Using wildcard DNS records, a wildcard certificate, and Authelia makes it
-   considerably harder to enumerate what services are running on a host.
-
+1. Granting the nginx user access to the socket file owned by the service user is easy by creating a common group that
+   both users are members of. What's hard is granting the nginx user _inside_ the container access to the socket file as
+   it's uid:gid maps to some random subuid:subgid on the host that does not have read/write permissions to the socket
+   file. This is further complicated by the fact that nginx worker processes drop supplementary groups at startup. I
+   could just map the nginx gid inside the container to the nginx gid on the host, but I'm not too sure of the
+   implications of doing this.
+2. Even after resolving all DAC permission issues, there's SELinux. The default container policies do not seem to like
+   containers accessing unix sockets. There are two approaches to solve this:
+    1. I can either grant ALL containers access to them by using the policy generated by the `audit2allow` program.
+    2. Or I have to write a custom policy to allow it for only the (host) nginx user's containers.

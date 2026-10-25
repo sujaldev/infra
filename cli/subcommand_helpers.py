@@ -39,6 +39,38 @@ class ServiceSubCommandBase(SubCommand):
         )
 
     @step
+    def create_socket_group(self, nginx_service_user):
+        socket_group = f"{self.service_user}-socket"
+
+        server.group(
+            name=f"Ensure group {socket_group!r} exists",
+            group=socket_group,
+            _sudo=True,
+        )
+
+        server.user(
+            name=f"Ensure service user {self.service_user!r} is part of group {socket_group!r}",
+            user=self.service_user,
+            groups=[socket_group],
+            append=True,
+            _sudo=True,
+        )
+
+        server.user(
+            name=f"Ensure user {nginx_service_user!r} is part of group {socket_group!r}",
+            user=nginx_service_user,
+            groups=[socket_group],
+            append=True,
+            _sudo=True,
+        )
+
+        server.shell(
+            name=f"Grant {socket_group!r} group members traversal privileges to {self.service_home!r}.",
+            commands=f"setfacl -m g:{socket_group}:--x {self.service_home}",
+            _sudo=True,
+        )
+
+    @step
     def generate_quadlets(self, src_dir: Path, **template_kwargs):
         quadlets_config_dir = self.service_home / ".config/containers/systemd"
 

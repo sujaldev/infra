@@ -1,0 +1,10 @@
+[Unit]
+Description=Unix socket used by ERPNext's internal Nginx
+
+[Socket]
+ListenStream=%h/%u-frontend.sock
+SocketGroup=%u-socket
+SocketMode=660
+
+[Install]
+WantedBy=sockets.target

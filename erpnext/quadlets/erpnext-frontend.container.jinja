@@ -2,8 +2,8 @@
 Description=ERPNext Frontend
 PartOf=erpnext.target
 
-Requires=erpnext-backend.service erpnext-websocket.service
-After=erpnext-backend.service erpnext-websocket.service
+Requires=erpnext-frontend.socket erpnext-backend.service erpnext-websocket.service
+After=erpnext-frontend.socket erpnext-backend.service erpnext-websocket.service
 
 [Container]
 ContainerName=frontend
@@ -11,10 +11,12 @@ Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
 Pull=never
 Network=erpnext.network
 NetworkAlias=frontend
-PublishPort=127.0.0.1:8080:8080/tcp
 Volume=sites:/home/frappe/frappe-bench/sites
 
 Exec=nginx-entrypoint.sh
+
+Environment=NGINX=3;
+Environment=NGINX_LISTEN_PORT={{ NGINX_LISTEN_PORT }}
 
 Environment=BACKEND=backend:8000
 Environment=CLIENT_MAX_BODY_SIZE={{ CLIENT_MAX_BODY_SIZE }}
