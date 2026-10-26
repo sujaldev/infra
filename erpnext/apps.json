@@ -1,14 +1,14 @@
 [
   {
     "url": "https://github.com/frappe/erpnext",
-    "branch": "version-16"
+    "branch": "v16.52.1"
   },
   {
     "url": "https://github.com/frappe/hrms",
-    "branch": "version-16"
+    "branch": "v16.52.0"
   },
   {
     "url": "https://github.com/resilient-tech/india-compliance",
-    "branch": "version-16"
+    "branch": "v16.11.0"
   }
 ]
