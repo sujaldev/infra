@@ -3,10 +3,7 @@ ImageTag=frappe-custom:{{ FRAPPE_VERSION }}
 Pull=never
 File=%h/frappe_docker/images/custom/Containerfile
 SetWorkingDirectory=%h/frappe_docker
-PodmanArgs=--no-cache
 BuildArg=FRAPPE_PATH=https://github.com/frappe/frappe
 BuildArg=FRAPPE_BRANCH={{ FRAPPE_VERSION }}
+BuildArg=CACHE_BUST={{ APPS_JSON_HASH }}
 Secret=id=apps_json,src=%h/apps.json
-
-[Service]
-ExecStartPost=/usr/bin/podman image prune --build-cache -f

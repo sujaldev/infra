@@ -1,3 +1,4 @@
+import hashlib
 import secrets
 import shlex
 from io import StringIO
@@ -260,7 +261,11 @@ class Setup(ERPNextSubCommand):
         self.create_service_user()
         self.generate_env()
         self.generate_db_password_secret()
-        self.generate_quadlets(SOURCE_DIR, **self.dotenv)
+        self.generate_quadlets(
+            SOURCE_DIR,
+            **self.dotenv,
+            APPS_JSON_HASH=hashlib.sha256((SOURCE_DIR / "apps.json").read_bytes()).hexdigest()
+        )
         self.copy_systemd_files(SOURCE_DIR)
         self.systemd_daemon_reload()
         self.sync_frappe_docker_repo()
