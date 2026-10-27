@@ -7,7 +7,7 @@ After=erpnext-backend.service erpnext-websocket.service
 
 [Container]
 ContainerName=frontend
-Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
+Image=erpnext-custom.build
 Pull=never
 Network=erpnext.network
 NetworkAlias=frontend

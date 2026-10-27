@@ -7,7 +7,7 @@ After=erpnext-configurator.service
 
 [Container]
 ContainerName=websocket
-Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
+Image=erpnext-custom.build
 Pull=never
 Network=erpnext.network
 NetworkAlias=websocket

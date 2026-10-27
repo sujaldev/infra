@@ -7,7 +7,7 @@ After=erpnext-configurator.service
 
 [Container]
 ContainerName=queue-short
-Image=localhost/{{ CUSTOM_IMAGE }}:{{ ERPNEXT_VERSION }}
+Image=erpnext-custom.build
 Pull=never
 Network=erpnext.network
 Volume=sites:/home/frappe/frappe-bench/sites
