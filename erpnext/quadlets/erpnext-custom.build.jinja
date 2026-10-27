@@ -4,7 +4,7 @@ File=%h/frappe_docker/images/custom/Containerfile
 SetWorkingDirectory=%h/frappe_docker
 PodmanArgs=--no-cache
 BuildArg=FRAPPE_PATH=https://github.com/frappe/frappe
-BuildArg=FRAPPE_BRANCH=version-16
+BuildArg=FRAPPE_BRANCH={{ FRAPPE_VERSION }}
 Secret=id=apps_json,src=%h/apps.json
 
 [Service]
