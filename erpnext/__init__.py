@@ -5,8 +5,6 @@ from io import StringIO
 from pathlib import Path
 
 from dotenv import dotenv_values
-from jinja2 import Environment
-from jinja2 import DictLoader
 from pyinfra import host
 from pyinfra import logger
 from pyinfra.api.facts import FactBase
@@ -80,18 +78,13 @@ class Setup(ERPNextSubCommand):
 
     @property
     def dotenv(self) -> dict:
-        return dotenv_values(stream=StringIO(self.render_dotenv_template()))
-
-    def render_dotenv_template(self) -> str:
-        with open(TEMPLATE_DOTENV_PATH) as file:
-            env = Environment(loader=DictLoader({
-                "template": file.read()
-            }))
-            return env.get_template("template").render(
-                gunicorn_workers=self.gunicorn_workers,
-                sites=self.sites,
-                podman_network_subnet=self.podman_network_subnet,
-            )
+        rendered_dotenv = self.render_template_file(
+            path=TEMPLATE_DOTENV_PATH,
+            gunicorn_workers=self.gunicorn_workers,
+            sites=self.sites,
+            podman_network_subnet=self.podman_network_subnet,
+        )
+        return dotenv_values(stream=StringIO(rendered_dotenv))
 
     @step
     def generate_env(self):

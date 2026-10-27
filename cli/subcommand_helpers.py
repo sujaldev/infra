@@ -1,6 +1,8 @@
 import shlex
 from pathlib import Path
 
+from jinja2 import Environment
+from jinja2 import DictLoader
 from pyinfra.operations import files
 from pyinfra.operations import server
 from pyinfra.operations import systemd
@@ -37,6 +39,17 @@ class ServiceSubCommandBase(SubCommand):
             commands=[f"loginctl enable-linger {shlex.quote(self.service_user)}"],
             _sudo=True,
         )
+
+    @staticmethod
+    def render_template_file(path: Path | str, **template_kwargs):
+        if isinstance(path, str):
+            path = Path(path)
+
+        env = Environment(loader=DictLoader({
+            "template": path.read_text()
+        }))
+        template = env.get_template("template")
+        return template.render(**template_kwargs)
 
     @step
     def generate_quadlets(self, src_dir: Path, **template_kwargs):
