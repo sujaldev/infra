@@ -1,5 +1,6 @@
 [Build]
-ImageTag={{ CUSTOM_IMAGE }}:{{ FRAPPE_VERSION }}
+ImageTag=frappe-custom:{{ FRAPPE_VERSION }}
+Pull=never
 File=%h/frappe_docker/images/custom/Containerfile
 SetWorkingDirectory=%h/frappe_docker
 PodmanArgs=--no-cache
