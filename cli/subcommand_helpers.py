@@ -1,9 +1,11 @@
 import shlex
+import shutil
 from pathlib import Path
 
 from jinja2 import Environment
 from jinja2 import DictLoader
 from pyinfra.operations import files
+from pyinfra.operations import python
 from pyinfra.operations import server
 from pyinfra.operations import systemd
 
@@ -51,66 +53,29 @@ class ServiceSubCommandBase(SubCommand):
         template = env.get_template("template")
         return template.render(**template_kwargs)
 
-    @step
-    def generate_quadlets(self, src_dir: Path, **template_kwargs):
-        quadlets_config_dir = self.service_home / ".config/containers/systemd"
+    def sync_template_directory(self, src_dir: Path, remote_dir: Path, **template_kwargs):
+        # Renders all *.jinja files in a local directory and then syncs the resulting directory to the remote.
 
-        files.directory(
-            path=str(quadlets_config_dir),
+        build_dir = Path("./build").resolve() / src_dir.name
+        if build_dir.exists():
+            shutil.rmtree(build_dir)
+        build_dir.mkdir(parents=True, exist_ok=True)
+
+        shutil.copytree(src_dir, build_dir, dirs_exist_ok=True)
+        for path in build_dir.iterdir():
+            if path.is_file() and path.suffix in (".jinja", ".j2"):
+                new_file = path.parent / path.stem
+                new_file.write_text(self.render_template_file(path, **template_kwargs))
+                path.unlink()
+
+        files.sync(
+            src=str(build_dir),
+            dest=str(remote_dir),
             user=self.service_user,
             group=self.service_user,
+            delete=True,
             _sudo=True,
-            _sudo_user=self.service_user,
         )
-
-        for path in (src_dir / "quadlets").iterdir():
-            if not path.is_file():
-                continue
-
-            if path.suffix == ".jinja":
-                files.template(
-                    src=str(path),
-                    dest=str(quadlets_config_dir / path.stem),
-                    user=self.service_user,
-                    group=self.service_user,
-                    _sudo=True,
-                    _sudo_user=self.service_user,
-                    **template_kwargs
-                )
-            else:
-                files.put(
-                    src=str(path),
-                    dest=str(quadlets_config_dir / path.name),
-                    user=self.service_user,
-                    group=self.service_user,
-                    _sudo=True,
-                    _sudo_user=self.service_user,
-                )
-
-    @step
-    def copy_systemd_files(self, src_dir: Path):
-        systemd_config_dir = self.service_home / ".config/systemd/user"
-
-        files.directory(
-            path=str(systemd_config_dir),
-            user=self.service_user,
-            group=self.service_user,
-            _sudo=True,
-            _sudo_user=self.service_user,
-        )
-
-        for path in (src_dir / "systemd").iterdir():
-            if not path.is_file():
-                continue
-
-            files.put(
-                src=str(path),
-                dest=str(systemd_config_dir / path.name),
-                user=self.service_user,
-                group=self.service_user,
-                _sudo=True,
-                _sudo_user=self.service_user,
-            )
 
     @step
     def systemd_daemon_reload(self):

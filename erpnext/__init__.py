@@ -254,12 +254,20 @@ class Setup(ERPNextSubCommand):
         self.create_service_user()
         self.generate_env()
         self.generate_db_password_secret()
-        self.generate_quadlets(
-            SOURCE_DIR,
-            **self.dotenv,
-            APPS_JSON_HASH=hashlib.sha256((SOURCE_DIR / "apps.json").read_bytes()).hexdigest()
+
+        template_kwargs = self.dotenv
+        template_kwargs["APPS_JSON_HASH"] = hashlib.sha256((SOURCE_DIR / "apps.json").read_bytes()).hexdigest()
+        self.sync_template_directory(
+            SOURCE_DIR / "quadlets",
+            self.service_home / ".config/containers/systemd",
+            **template_kwargs,
         )
-        self.copy_systemd_files(SOURCE_DIR)
+        self.sync_template_directory(
+            SOURCE_DIR / "systemd",
+            self.service_home / ".config/systemd/user",
+            **template_kwargs,
+        )
+
         self.systemd_daemon_reload()
         self.sync_frappe_docker_repo()
         self.sync_apps_json()
