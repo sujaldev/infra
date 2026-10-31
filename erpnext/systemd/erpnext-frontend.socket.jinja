@@ -1,0 +1,6 @@
+[Unit]
+Description=ERPNext Frontend Socket
+PartOf=erpnext.target
+
+[Socket]
+ListenStream={{ NGINX_LISTEN_PORT }}
