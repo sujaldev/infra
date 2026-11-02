@@ -5,7 +5,7 @@ Requires=erpnext-backend.service
 After=erpnext-backend.service
 
 [Container]
-Image=erpnext-custom.build
+Image=erpnext.image
 Pull=never
 Network=erpnext.network
 Volume=sites:/home/frappe/frappe-bench/sites
